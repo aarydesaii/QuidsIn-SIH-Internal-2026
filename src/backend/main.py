@@ -1,5 +1,6 @@
 ﻿import os
 import io
+import sys
 import uuid
 import random
 import datetime
@@ -8,6 +9,9 @@ from typing import Optional
 
 from PIL import Image
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT))
+
 from fastapi import FastAPI, File, UploadFile, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -15,8 +19,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 
-from disease_kb import get_disease_info, DISEASE_DATABASE
-from predict import predict, get_model
+from src.backend.disease_kb import get_disease_info, DISEASE_DATABASE
+from model.predict import predict, get_model
 
 app = FastAPI(title="AgriSmart AI", description="Intelligent Agriculture Platform for SIH 2026")
 
@@ -28,10 +32,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = Path(__file__).resolve().parent
-TEMPLATES_DIR = BASE_DIR / "app" / "templates"
-STATIC_DIR = BASE_DIR / "app" / "static"
-UPLOAD_DIR = BASE_DIR / "data" / "uploads"
+TEMPLATES_DIR = PROJECT_ROOT / "src" / "frontend" / "templates"
+STATIC_DIR = PROJECT_ROOT / "src" / "frontend" / "static"
+UPLOAD_DIR = PROJECT_ROOT / "data" / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -244,4 +247,4 @@ async def chat_endpoint(query: str = Form(...), lang: str = Form("en")):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("src.backend.main:app", host="127.0.0.1", port=8000, reload=True)

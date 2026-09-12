@@ -111,7 +111,7 @@ predict(image_path) -> class_label
 **or** a documented CLI:
 
 ```bash
-python predict.py --image path/to/leaf.jpg
+python model/predict.py --image path/to/leaf.jpg
 ```
 
 Requirements:
@@ -238,12 +238,12 @@ Adopted structure:
 /requirements.txt
 /src
     /backend            FastAPI application
-    /frontend           React + Vite PWA
+    /frontend           Jinja2 templates + static assets
 /model
-    train.py            or train.ipynb
+    train.py            training script
     predict.py          MANDATORY predict interface
-    evaluate.py         macro-F1, confusion matrix, per-class metrics
-    weights/            via release or link if large
+    evaluate.py         macro-F1, confusion matrix, per-class metrics (pending)
+    weights/            best.pt — via release or link if large
 /report
     model_report.md     one-page report
 /data                   gitignored — datasets never committed
@@ -455,7 +455,7 @@ Four days. Ordering is fixed; the core must be reproducible before any bonus wor
 | Day | Target | Gate |
 |-----|--------|------|
 | **Day 1 — 11 Sep** | Repo restructured to the mandated layout. Kickoff data downloaded, class list confirmed. Dataset split. Baseline training run started in Colab. Frontend and backend scaffolds running. | Everyone has committed at least once |
-| **Day 2 — 12 Sep** | Trained model with macro-F1 recorded. `predict.py` matching the published signature exactly. `evaluate.py` producing macro-F1 + confusion matrix. Augmentation pipeline in place. | **`python predict.py --image x.jpg` works from a clean clone** |
+| **Day 2 — 12 Sep** | Trained model with macro-F1 recorded. `predict.py` matching the published signature exactly. `evaluate.py` producing macro-F1 + confusion matrix. Augmentation pipeline in place. | **`python model/predict.py --image x.jpg` works from a clean clone** |
 | **Day 3 — 13 Sep** | FastAPI `/predict` live. PWA capture→result flow working. Knowledge base populated. Core demo-able end to end. Retrain with full augmentation. | **Core task complete — the submission is now valid** |
 | **Day 4 — 14 Sep** | Bonus modules D → C → E in priority order. README written in full. Model report written. Deployment. | Reproducibility tested by a member who did not build it |
 | **Day 5 — 15 Sep** | Demo video recorded. Final metrics. Originality declaration. Buffer. **Submit.** | Repo public, link submitted |

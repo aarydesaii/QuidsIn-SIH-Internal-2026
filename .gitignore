@@ -30,8 +30,8 @@ venv.bak/
 # Ultralytics & Model Checkpoints
 runs/
 *.pt
-!model/best.pt
-model/*.pt
+model/weights/*.pt
+!model/weights/.gitkeep
 !model/.gitkeep
 
 # Operating System & IDE

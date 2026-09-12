@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 # Path to the trained YOLO model weights (Section 7.1)
-MODEL_PATH = Path(__file__).parent / 'model' / 'best.pt'
+MODEL_PATH = Path(__file__).parent / 'weights' / 'best.pt'
 _cached_model = None
 
 def get_model():

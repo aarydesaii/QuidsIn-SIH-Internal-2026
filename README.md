@@ -15,7 +15,7 @@
 | **3.2 Bonus Module D** |  Built | Quantified Farm Sustainability Score & resource savings formula (Water, Fungicide, CO2) |
 | **3.2 Bonus Module E** |  Built | Kisan Sahayak GenAI Assistant with Voice/TTS & multilingual capability |
 | **3.2 Bonus Module F** |  Built | Soil Analytics — simulated agronomic model (Soil Moisture, Temp, Humidity, pH, NPK). Software only, no hardware |
-| **4.1 Predict CLI Interface** |  Built | Standalone reproducible CLI (`python predict.py --image <path>`) |
+| **4.1 Predict CLI Interface** |  Built | Standalone reproducible CLI (`python model/predict.py --image <path>`) |
 
 ---
 
@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 ### Step 2: Test Core Predict Interface (Section 4.1 Requirement)
 ```bash
-python predict.py --image data/uploads/sample_leaf.jpg
+python model/predict.py --image data/uploads/sample_leaf.jpg
 ```
 *Expected Output:*
 ```text
@@ -42,10 +42,24 @@ Predicted Class: Tomato___Early_blight
 ```
 
 ### Step 3: Launch Full Web Dashboard
+Run from the repository root:
 ```bash
-python main.py
+python -m uvicorn src.backend.main:app --reload
 ```
 Open your browser at: **`http://localhost:8000`**
+
+### Repository Structure
+```text
+src/
+    backend/      FastAPI application (main.py, disease_kb.py)
+    frontend/     Jinja2 templates and static assets
+model/
+    predict.py    MANDATORY predict interface (Section 4.1)
+    train.py      Training script
+    weights/      Trained weights (best.pt) — not committed
+data/             Datasets and uploads — gitignored
+report/           Model report
+```
 
 ---
 
