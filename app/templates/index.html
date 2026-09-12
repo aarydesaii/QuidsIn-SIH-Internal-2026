@@ -1,0 +1,577 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriSmart AI - Intelligent Crop Disease & Farm Advisory Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#15803d',
+                        secondary: '#166534',
+                        accent: '#84cc16'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+    <!-- Top Navigation -->
+    <nav class="bg-emerald-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-leaf text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                        AgriSmart <span class="text-emerald-400 font-extrabold">AI</span>
+                        <span class="text-xs bg-emerald-800 border border-emerald-600 px-2 py-0.5 rounded-full font-normal">SIH-2026 [C-433]</span>
+                    </h1>
+                    <p class="text-xs text-emerald-200">Intelligent Agriculture for a Sustainable Future</p>
+                </div>
+            </div>
+
+            <!-- Live Indicators -->
+            <div class="hidden md:flex items-center space-x-4 text-xs font-medium">
+                <div class="flex items-center space-x-1.5 bg-emerald-800/80 px-3 py-1.5 rounded-lg border border-emerald-700">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>YOLOv8 Diagnostic: Active</span>
+                </div>
+                <div class="flex items-center space-x-1.5 bg-emerald-800/80 px-3 py-1.5 rounded-lg border border-emerald-700">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <span>ESP32 Telemetry: Live</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Top Overview Banner -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-microscope"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Detection Engine</p>
+                    <p class="text-base font-bold text-slate-800">YOLO Transfer-Learned</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-cloud-sun-rain"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Spray Advisory</p>
+                    <p id="top-spray-advisory" class="text-base font-bold text-blue-800">Checking Weather...</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-droplet"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Soil Moisture</p>
+                    <p id="top-moisture" class="text-base font-bold text-cyan-800">Connecting...</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-lime-100 text-lime-700 flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-seedling"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Eco Score</p>
+                    <p id="top-eco-score" class="text-base font-bold text-lime-800">88 / 100 (Optimal)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Grid: Disease Scanner (Left 7 Cols) + Weather & IoT (Right 5 Cols) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Side: Core Task Diagnostic Scanner -->
+            <div class="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+                            <i class="fa-solid fa-camera-retro text-emerald-600"></i>
+                            Crop Disease Diagnostic Scanner
+                        </h2>
+                        <p class="text-sm text-slate-500 mt-1">Upload leaf photo for instant computer vision classification & agronomic guidance</p>
+                    </div>
+                </div>
+
+                <!-- Drag & Drop Zone -->
+                <div id="drop-zone" class="border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/50 hover:bg-emerald-50 transition-all rounded-2xl p-8 text-center cursor-pointer relative">
+                    <input type="file" id="file-input" accept="image/*" class="hidden">
+                    <div id="upload-prompt" class="space-y-3">
+                        <div class="w-16 h-16 mx-auto bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-3xl">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <div>
+                            <p class="text-base font-semibold text-slate-700">Drag & drop your crop leaf photo here</p>
+                            <p class="text-xs text-slate-400 mt-1">Supports JPG, PNG, WEBP (Field or Lab conditions)</p>
+                        </div>
+                        <button type="button" onclick="document.getElementById('file-input').click()" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow transition">
+                            Browse Photo
+                        </button>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div id="preview-container" class="hidden space-y-4">
+                        <img id="image-preview" src="#" alt="Uploaded leaf preview" class="max-h-64 mx-auto rounded-xl shadow-md border border-slate-200 object-cover">
+                        <div class="flex justify-center space-x-3">
+                            <button type="button" onclick="resetUpload()" class="px-3 py-1.5 text-xs text-slate-500 hover:text-red-600 bg-white border border-slate-200 rounded-lg shadow-sm">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Change Image
+                            </button>
+                            <button type="button" id="scan-btn" onclick="runDiagnosis()" class="px-6 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition flex items-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>Run AI Diagnostics</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnosis Results Container -->
+                <div id="result-box" class="hidden mt-8 space-y-6">
+                    <div class="p-5 rounded-2xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" id="result-banner">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span id="res-crop" class="text-xs font-extrabold uppercase px-2.5 py-1 rounded-md bg-white/80 border">Crop</span>
+                                <span id="res-severity" class="text-xs font-bold px-2.5 py-1 rounded-md">Severity</span>
+                            </div>
+                            <h3 id="res-disease" class="text-2xl font-black mt-2">Tomato Early Blight</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Model Confidence: <span id="res-confidence" class="font-bold text-slate-800">94.2%</span> (Transfer-Learned Backbone)</p>
+                        </div>
+
+                        <!-- Read Out Loud Button (Farmer Accessibility) -->
+                        <button onclick="speakRemedy()" class="px-4 py-2 bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition">
+                            <i class="fa-solid fa-volume-high text-emerald-600 text-base"></i>
+                            <span>Listen to Advice</span>
+                        </button>
+                    </div>
+
+                    <!-- Symptoms & Precautionary Guidance -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4">
+                            <h4 class="text-sm font-bold text-amber-900 flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Identified Symptoms
+                            </h4>
+                            <ul id="res-symptoms" class="mt-2 text-xs text-amber-800 space-y-1.5 list-disc list-inside"></ul>
+                        </div>
+
+                        <div class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4">
+                            <h4 class="text-sm font-bold text-emerald-900 flex items-center gap-2">
+                                <i class="fa-solid fa-seedling text-emerald-600"></i> Organic & Bio Remedies
+                            </h4>
+                            <ul id="res-organic" class="mt-2 text-xs text-emerald-800 space-y-1.5 list-disc list-inside"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Chemical & Irrigation Guidance -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                        <div>
+                            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-flask-vial text-indigo-600"></i> Chemical / Bio-Fungicide Formulation
+                            </h5>
+                            <p id="res-chemical" class="text-xs text-slate-600 mt-1"></p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-200">
+                            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-faucet-drip text-cyan-600"></i> Irrigation Precaution
+                            </h5>
+                            <p id="res-irrigation" class="text-xs text-slate-600 mt-1"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Side: Weather, IoT Telemetry, and Farmer Chat -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Weather & Micro-Climate Intelligence (Module C) -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-sun text-amber-500"></i>
+                            Weather & Spray Intelligence
+                        </h3>
+                        <span id="weather-city-badge" class="text-xs bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-full border border-slate-200">Ahmedabad</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 text-center my-4">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <p class="text-xs text-slate-400">Temperature</p>
+                            <p id="weather-temp" class="text-xl font-extrabold text-slate-800">31.4°C</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <p class="text-xs text-slate-400">Humidity</p>
+                            <p id="weather-humidity" class="text-xl font-extrabold text-slate-800">64%</p>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <p class="text-xs text-slate-400">Wind</p>
+                            <p id="weather-wind" class="text-xl font-extrabold text-slate-800">11 km/h</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50/80 border border-blue-200 rounded-xl p-3 flex items-start gap-3">
+                        <i class="fa-solid fa-bell text-blue-600 text-sm mt-0.5"></i>
+                        <div>
+                            <p class="text-xs font-bold text-blue-900" id="weather-advisory-title">Favorable Spray Window</p>
+                            <p class="text-xs text-blue-700 mt-0.5" id="weather-advisory-desc">Wind is under 15 km/h with low rain probability. Safe for foliar application.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-Time IoT Soil Telemetry (Module F) -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-slate-900">
+                                <i class="fa-solid fa-tower-broadcast text-emerald-600 mr-1"></i>
+                                IoT Soil Telemetry Feed
+                            </h3>
+                        </div>
+                        <span class="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Live ESP32
+                        </span>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Moisture Meter -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-slate-600">Volumetric Soil Moisture</span>
+                                <span id="iot-moisture-val" class="text-emerald-700 font-bold">34.2%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                                <div id="iot-moisture-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 34.2%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Soil pH & Ambient -->
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <p class="text-xs text-slate-400">Soil pH</p>
+                                <p id="iot-ph-val" class="text-lg font-bold text-slate-800">6.62</p>
+                                <p class="text-[10px] text-emerald-600 font-medium">Optimal (6.2-6.8)</p>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <p class="text-xs text-slate-400">Soil Temp</p>
+                                <p id="iot-temp-val" class="text-lg font-bold text-slate-800">30.1°C</p>
+                                <p class="text-[10px] text-slate-500 font-medium">Root Zone Healthy</p>
+                            </div>
+                        </div>
+
+                        <!-- Irrigation Automation Action -->
+                        <div id="iot-irrigation-card" class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-emerald-900" id="iot-irrigation-action">OPTIMAL: Soil Moisture Adequate</p>
+                                <p class="text-[10px] text-emerald-700">Autonomous irrigation valve currently on standby.</p>
+                            </div>
+                            <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Farmer AI Assistant (Module E) -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-robot text-emerald-600"></i>
+                        Kisan Sahayak AI Assistant
+                    </h3>
+
+                    <div id="chat-box" class="h-44 overflow-y-auto bg-slate-50 rounded-2xl p-3 space-y-2 border border-slate-100 text-xs">
+                        <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-slate-700 shadow-sm">
+                            <p class="font-bold text-emerald-800 text-[11px] mb-1">AgriSmart Expert:</p>
+                            Namaste! I am your AI Agronomist. Ask me any question regarding plant diseases, pest cures, weather advisories, or irrigation tips in Hindi, Gujarati, or English!
+                        </div>
+                    </div>
+
+                    <form id="chat-form" onsubmit="sendChatMessage(event)" class="mt-3 flex gap-2">
+                        <input type="text" id="chat-input" placeholder="Type query (e.g. Blight treatment)..." class="flex-1 text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <button type="submit" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Bottom Row: Sustainability & Ecological Impact Calculator (Module D) -->
+        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-leaf text-lime-600"></i>
+                        Quantified Sustainability & Ecological Scorecard
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Calculates precision resource conservation strictly according to Section 3.2 Module D formula</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                <div class="bg-emerald-50/60 border border-emerald-200 p-4 rounded-2xl">
+                    <p class="text-xs text-emerald-800 font-semibold uppercase">Water Conserved</p>
+                    <p id="calc-water" class="text-2xl font-black text-emerald-900 mt-1">26,250 Litres</p>
+                    <p class="text-[10px] text-emerald-600 mt-1">Weekly drip deficit savings</p>
+                </div>
+                <div class="bg-cyan-50/60 border border-cyan-200 p-4 rounded-2xl">
+                    <p class="text-xs text-cyan-800 font-semibold uppercase">Fungicide Reduced</p>
+                    <p id="calc-fungicide" class="text-2xl font-black text-cyan-900 mt-1">4.5 kg</p>
+                    <p class="text-[10px] text-cyan-600 mt-1">Via targeted spot spraying</p>
+                </div>
+                <div class="bg-blue-50/60 border border-blue-200 p-4 rounded-2xl">
+                    <p class="text-xs text-blue-800 font-semibold uppercase">CO2 Footprint Cut</p>
+                    <p id="calc-co2" class="text-2xl font-black text-blue-900 mt-1">29.4 kg</p>
+                    <p class="text-[10px] text-blue-600 mt-1">Reduced pump fuel & chemical energy</p>
+                </div>
+                <div class="bg-amber-50/60 border border-amber-200 p-4 rounded-2xl">
+                    <p class="text-xs text-amber-800 font-semibold uppercase">Estimated Farmer Savings</p>
+                    <p id="calc-inr" class="text-2xl font-black text-amber-900 mt-1">₹5,925</p>
+                    <p class="text-[10px] text-amber-600 mt-1">Per cycle savings</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+    <!-- Client-Side JavaScript Logic -->
+    <script>
+        let currentFile = null;
+        let lastRemedyText = "";
+
+        // File Selection & Drag-and-Drop
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadPrompt = document.getElementById('upload-prompt');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const resultBox = document.getElementById('result-box');
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-emerald-600', 'bg-emerald-100/50');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-emerald-600', 'bg-emerald-100/50');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-emerald-600', 'bg-emerald-100/50');
+            if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFile(file) {
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                uploadPrompt.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+                resultBox.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetUpload() {
+            currentFile = null;
+            fileInput.value = '';
+            uploadPrompt.classList.remove('hidden');
+            previewContainer.classList.add('hidden');
+            resultBox.classList.add('hidden');
+        }
+
+        // Run Diagnostic Inference
+        async function runDiagnosis() {
+            if (!currentFile) return;
+
+            const scanBtn = document.getElementById('scan-btn');
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Analyzing with YOLO...</span>`;
+
+            const formData = new FormData();
+            formData.append('file', currentFile);
+
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    displayResults(data);
+                } else {
+                    alert('Diagnostic Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Connection error with AI Diagnostic server.');
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i><span>Run AI Diagnostics</span>`;
+            }
+        }
+
+        function displayResults(data) {
+            document.getElementById('res-crop').innerText = data.crop;
+            document.getElementById('res-disease').innerText = data.disease;
+            document.getElementById('res-confidence').innerText = data.confidence + '%';
+            
+            const severityEl = document.getElementById('res-severity');
+            severityEl.innerText = data.severity;
+            const banner = document.getElementById('result-banner');
+
+            if (data.is_healthy) {
+                severityEl.className = 'text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800';
+                banner.className = 'p-5 rounded-2xl border bg-emerald-50 border-emerald-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4';
+            } else {
+                severityEl.className = 'text-xs font-bold px-2.5 py-1 rounded-md bg-red-100 text-red-800';
+                banner.className = 'p-5 rounded-2xl border bg-red-50 border-red-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4';
+            }
+
+            // Symptoms
+            const symptomsList = document.getElementById('res-symptoms');
+            symptomsList.innerHTML = '';
+            data.symptoms.forEach(sym => {
+                const li = document.createElement('li');
+                li.innerText = sym;
+                symptomsList.appendChild(li);
+            });
+
+            // Organic remedies
+            const organicList = document.getElementById('res-organic');
+            organicList.innerHTML = '';
+            data.organic_remedies.forEach(rem => {
+                const li = document.createElement('li');
+                li.innerText = rem;
+                organicList.appendChild(li);
+            });
+
+            document.getElementById('res-chemical').innerText = data.chemical_remedies.join(' | ');
+            document.getElementById('res-irrigation').innerText = data.irrigation_advice;
+
+            // Prepare text for speech synthesis
+            lastRemedyText = `${data.crop} diagnosed with ${data.disease}. Precaution: ${data.organic_remedies[0]}. Irrigation: ${data.irrigation_advice}`;
+
+            resultBox.classList.remove('hidden');
+            resultBox.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Web Speech API: Text to Speech
+        function speakRemedy() {
+            if (!lastRemedyText) return;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(lastRemedyText);
+                utterance.rate = 0.95;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('Speech synthesizer not supported in this browser.');
+            }
+        }
+
+        // Fetch Weather
+        async function fetchWeather() {
+            try {
+                const res = await fetch('/api/weather?city=Ahmedabad');
+                const w = await res.json();
+                document.getElementById('weather-temp').innerText = w.temp_c + '°C';
+                document.getElementById('weather-humidity').innerText = w.humidity + '%';
+                document.getElementById('weather-wind').innerText = w.wind_kmh + ' km/h';
+                document.getElementById('weather-advisory-title').innerText = w.spray_advisory;
+                document.getElementById('top-spray-advisory').innerText = w.spray_advisory.split('(')[0];
+            } catch (e) {
+                console.log('Weather fetch failed', e);
+            }
+        }
+
+        // Fetch IoT Telemetry (Polling every 3.5s)
+        async function fetchIoT() {
+            try {
+                const res = await fetch('/api/iot-feed');
+                const iot = await res.json();
+                
+                document.getElementById('iot-moisture-val').innerText = iot.soil_moisture_percent + '%';
+                document.getElementById('iot-moisture-bar').style.width = iot.soil_moisture_percent + '%';
+                document.getElementById('iot-ph-val').innerText = iot.soil_ph;
+                document.getElementById('iot-temp-val').innerText = iot.soil_temp_c + '°C';
+                document.getElementById('top-moisture').innerText = iot.soil_moisture_percent + '% (Volumetric)';
+                
+                const actionCard = document.getElementById('iot-irrigation-card');
+                const actionText = document.getElementById('iot-irrigation-action');
+                actionText.innerText = iot.irrigation_action;
+
+                if (iot.irrigation_needed) {
+                    actionCard.className = 'bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center justify-between';
+                } else {
+                    actionCard.className = 'bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between';
+                }
+            } catch (e) {
+                console.log('IoT feed fetch error', e);
+            }
+        }
+
+        // Chat Form
+        async function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const chatBox = document.getElementById('chat-box');
+            
+            // Append user msg
+            chatBox.innerHTML += `
+                <div class="bg-emerald-100 text-emerald-900 p-2.5 rounded-xl text-right font-medium">
+                    ${query}
+                </div>
+            `;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Form data
+            const fd = new FormData();
+            fd.append('query', query);
+            fd.append('lang', 'en');
+
+            try {
+                const res = await fetch('/api/chat', { method: 'POST', body: fd });
+                const data = await res.json();
+                chatBox.innerHTML += `
+                    <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-slate-700 shadow-sm">
+                        <p class="font-bold text-emerald-800 text-[10px] uppercase mb-1">${data.source}:</p>
+                        ${data.reply.replace(/\n/g, '<br>')}
+                    </div>
+                `;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (err) {
+                chatBox.innerHTML += `<div class="text-red-600">Error connecting to Kisan Sahayak.</div>`;
+            }
+        }
+
+        // Init on page load
+        fetchWeather();
+        fetchIoT();
+        setInterval(fetchIoT, 3500);
+    </script>
+</body>
+</html>
