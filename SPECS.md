@@ -23,6 +23,14 @@ Three facts drive every decision in this document:
    degrade sharply on field images — this is stated as deliberate.
 3. **The commit window is 10 – 15 September.** Work committed outside it does not count.
 
+### Scope — Software Only
+
+This project is **entirely software**. It ships no microcontrollers, sensors, or other
+physical devices, and nothing in the codebase talks to hardware. The soil figures in
+Bonus Module F come from a simulated agronomic model and are labelled as simulated
+everywhere they appear in the interface. Section 6 records that the brief scores a
+simulated feed equally with real sensor data, so this costs no marks.
+
 ---
 
 ## 2. Timeline — Critical
@@ -182,7 +190,7 @@ Each adds points. Built **only after the core task is complete and reproducible.
 | C | Weather-Based Intelligence | Live/forecast weather + farm conditions → actions ("delay irrigation — rain likely") | **Name the weather data source** |
 | D | Sustainability Score | Indicative score from water efficiency, resource use, crop health, with improvements | **Publish the exact formula so it is reproducible** |
 | E | Farmer Assistant (GenAI) | Conversational/voice interface explaining recommendations in plain language, ideally regional-language | **Grounded answers score higher than free-form** |
-| F | IoT Integration | Real sensor data — soil moisture, temperature, humidity, pH | **Simulated/streamed feed is fully acceptable and scored equally** |
+| F | Soil Analytics | Soil moisture, temperature, humidity and pH presented as an advisory feed. **Implemented as a software simulation — this project ships no hardware.** | **Simulated/streamed feed is fully acceptable and scored equally** |
 | G | Agentic Advisor | Autonomous agent that analyses, reasons, checks data, decides, notifies | Show the decision loop and ≥1 end-to-end automated recommendation |
 
 ### 6.1 Recommended Priority
@@ -195,7 +203,7 @@ Given four days, chosen for points-per-hour and rubric alignment:
 | 2 | **C — Weather Intelligence** | One free API. Feeds D with real numbers and produces visibly actionable output for the UX axis. |
 | 3 | **E — Farmer Assistant** | Serves UX (10) and regional-language credit. Must be **grounded** in the detection result and knowledge base, not free-form. |
 | 4 | **B — Smart Irrigation** | Rule-based version is cheap once C exists; feeds D's water-efficiency term. |
-| 5 | **F — IoT (simulated)** | Simulated feed scores equally with hardware. Cheap if B exists. |
+| 5 | **F — Soil Analytics (simulated)** | The brief awards a simulated feed full marks, so no physical devices are required. Cheap if B exists. |
 | 6 | **A — Crop Recommendation** | Needs a separate dataset and model. Real cost. |
 | 7 | **G — Agentic Advisor** | Highest innovation ceiling, highest risk. Only if everything else is done. |
 

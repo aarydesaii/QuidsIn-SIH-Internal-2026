@@ -47,7 +47,7 @@
                 </div>
                 <div class="flex items-center space-x-1.5 bg-emerald-800/80 px-3 py-1.5 rounded-lg border border-emerald-700">
                     <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                    <span>ESP32 Telemetry: Live</span>
+                    <span>Soil Analytics: Simulated</span>
                 </div>
             </div>
         </div>
@@ -99,7 +99,7 @@
             </div>
         </div>
 
-        <!-- Central Grid: Disease Scanner (Left 7 Cols) + Weather & IoT (Right 5 Cols) -->
+        <!-- Central Grid: Disease Scanner (Left 7 Cols) + Weather & Soil Analytics (Right 5 Cols) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             <!-- Left Side: Core Task Diagnostic Scanner -->
@@ -198,7 +198,7 @@
                     </div>
                 </div>
             </div>
-            <!-- Right Side: Weather, IoT Telemetry, and Farmer Chat -->
+            <!-- Right Side: Weather, Soil Analytics, and Farmer Chat -->
             <div class="lg:col-span-5 space-y-6">
                 
                 <!-- Weather & Micro-Climate Intelligence (Module C) -->
@@ -235,17 +235,17 @@
                     </div>
                 </div>
 
-                <!-- Real-Time IoT Soil Telemetry (Module F) -->
+                <!-- Soil Analytics (Module F - Software Simulation) -->
                 <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center gap-2">
                             <h3 class="text-lg font-bold text-slate-900">
-                                <i class="fa-solid fa-tower-broadcast text-emerald-600 mr-1"></i>
-                                IoT Soil Telemetry Feed
+                                <i class="fa-solid fa-flask text-emerald-600 mr-1"></i>
+                                Soil Analytics
                             </h3>
                         </div>
-                        <span class="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Live ESP32
+                        <span class="text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <i class="fa-solid fa-code text-[10px]"></i> Simulated Model
                         </span>
                     </div>
 
@@ -254,10 +254,10 @@
                         <div>
                             <div class="flex justify-between text-xs font-semibold mb-1">
                                 <span class="text-slate-600">Volumetric Soil Moisture</span>
-                                <span id="iot-moisture-val" class="text-emerald-700 font-bold">34.2%</span>
+                                <span id="soil-moisture-val" class="text-emerald-700 font-bold">34.2%</span>
                             </div>
                             <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                                <div id="iot-moisture-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 34.2%"></div>
+                                <div id="soil-moisture-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 34.2%"></div>
                             </div>
                         </div>
 
@@ -265,21 +265,21 @@
                         <div class="grid grid-cols-2 gap-3 pt-2">
                             <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
                                 <p class="text-xs text-slate-400">Soil pH</p>
-                                <p id="iot-ph-val" class="text-lg font-bold text-slate-800">6.62</p>
+                                <p id="soil-ph-val" class="text-lg font-bold text-slate-800">6.62</p>
                                 <p class="text-[10px] text-emerald-600 font-medium">Optimal (6.2-6.8)</p>
                             </div>
                             <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
                                 <p class="text-xs text-slate-400">Soil Temp</p>
-                                <p id="iot-temp-val" class="text-lg font-bold text-slate-800">30.1°C</p>
+                                <p id="soil-temp-val" class="text-lg font-bold text-slate-800">30.1°C</p>
                                 <p class="text-[10px] text-slate-500 font-medium">Root Zone Healthy</p>
                             </div>
                         </div>
 
                         <!-- Irrigation Automation Action -->
-                        <div id="iot-irrigation-card" class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+                        <div id="soil-irrigation-card" class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-bold text-emerald-900" id="iot-irrigation-action">OPTIMAL: Soil Moisture Adequate</p>
-                                <p class="text-[10px] text-emerald-700">Autonomous irrigation valve currently on standby.</p>
+                                <p class="text-xs font-bold text-emerald-900" id="soil-irrigation-action">OPTIMAL: Soil Moisture Adequate</p>
+                                <p class="text-[10px] text-emerald-700">No irrigation recommended at this time.</p>
                             </div>
                             <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
                         </div>
@@ -504,29 +504,29 @@
             }
         }
 
-        // Fetch IoT Telemetry (Polling every 3.5s)
-        async function fetchIoT() {
+        // Fetch soil analytics (Polling every 3.5s)
+        async function fetchSoilAnalytics() {
             try {
-                const res = await fetch('/api/iot-feed');
-                const iot = await res.json();
+                const res = await fetch('/api/soil-analytics');
+                const soil = await res.json();
                 
-                document.getElementById('iot-moisture-val').innerText = iot.soil_moisture_percent + '%';
-                document.getElementById('iot-moisture-bar').style.width = iot.soil_moisture_percent + '%';
-                document.getElementById('iot-ph-val').innerText = iot.soil_ph;
-                document.getElementById('iot-temp-val').innerText = iot.soil_temp_c + '°C';
-                document.getElementById('top-moisture').innerText = iot.soil_moisture_percent + '% (Volumetric)';
+                document.getElementById('soil-moisture-val').innerText = soil.soil_moisture_percent + '%';
+                document.getElementById('soil-moisture-bar').style.width = soil.soil_moisture_percent + '%';
+                document.getElementById('soil-ph-val').innerText = soil.soil_ph;
+                document.getElementById('soil-temp-val').innerText = soil.soil_temp_c + '°C';
+                document.getElementById('top-moisture').innerText = soil.soil_moisture_percent + '% (Volumetric)';
                 
-                const actionCard = document.getElementById('iot-irrigation-card');
-                const actionText = document.getElementById('iot-irrigation-action');
-                actionText.innerText = iot.irrigation_action;
+                const actionCard = document.getElementById('soil-irrigation-card');
+                const actionText = document.getElementById('soil-irrigation-action');
+                actionText.innerText = soil.irrigation_action;
 
-                if (iot.irrigation_needed) {
+                if (soil.irrigation_needed) {
                     actionCard.className = 'bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center justify-between';
                 } else {
                     actionCard.className = 'bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between';
                 }
             } catch (e) {
-                console.log('IoT feed fetch error', e);
+                console.log('Soil analytics fetch error', e);
             }
         }
 
@@ -570,8 +570,8 @@
 
         // Init on page load
         fetchWeather();
-        fetchIoT();
-        setInterval(fetchIoT, 3500);
+        fetchSoilAnalytics();
+        setInterval(fetchSoilAnalytics, 3500);
     </script>
 </body>
 </html>

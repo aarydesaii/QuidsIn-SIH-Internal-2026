@@ -1,8 +1,12 @@
 ﻿import os
+import io
+import uuid
 import random
 import datetime
 from pathlib import Path
 from typing import Optional
+
+from PIL import Image
 
 from fastapi import FastAPI, File, UploadFile, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -35,6 +39,9 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
@@ -42,12 +49,34 @@ async def home(request: Request):
 @app.post("/api/predict")
 async def predict_endpoint(file: UploadFile = File(...)):
     try:
+        extension = Path(file.filename or "").suffix.lower()
+        if extension not in ALLOWED_IMAGE_EXTENSIONS:
+            return JSONResponse(
+                {"status": "error", "message": "Unsupported file type. Upload a JPG, PNG or WEBP image."},
+                status_code=400,
+            )
+
+        contents = await file.read()
+        if len(contents) > MAX_UPLOAD_BYTES:
+            return JSONResponse(
+                {"status": "error", "message": "Image is too large. Maximum size is 10 MB."},
+                status_code=400,
+            )
+
+        try:
+            Image.open(io.BytesIO(contents)).verify()
+        except Exception:
+            return JSONResponse(
+                {"status": "error", "message": "File is not a valid image."},
+                status_code=400,
+            )
+
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{timestamp}_{file.filename}"
+        filename = f"{timestamp}_{uuid.uuid4().hex[:8]}{extension}"
         filepath = UPLOAD_DIR / filename
-        
+
         with open(filepath, "wb") as f:
-            f.write(await file.read())
+            f.write(contents)
 
         model = get_model()
         if model is not None:
@@ -118,8 +147,8 @@ async def weather_endpoint(city: str = "Ahmedabad"):
         "source": "Simulated Agro-Meteorological Station"
     })
 
-@app.get("/api/iot-feed")
-async def iot_feed():
+@app.get("/api/soil-analytics")
+async def soil_analytics():
     moisture = round(random.uniform(28.0, 38.0), 1)
     temp = round(random.uniform(29.0, 33.5), 1)
     humidity = round(random.uniform(62.0, 72.0), 1)
@@ -136,9 +165,9 @@ async def iot_feed():
         "ambient_humidity_percent": humidity,
         "soil_ph": ph,
         "npk": {"N": int(nitrogen), "P": int(phosphorus), "K": int(potassium)},
-        "irrigation_action": "ACTIVATE DRIP (Moisture < 30%)" if irrigation_needed else "OPTIMAL (No Irrigation Needed)",
+        "irrigation_action": "IRRIGATION RECOMMENDED (Moisture < 30%)" if irrigation_needed else "OPTIMAL (No Irrigation Needed)",
         "irrigation_needed": irrigation_needed,
-        "device_status": "Online (ESP32 Gateway Stream)"
+        "data_source": "Simulated agronomic soil model"
     })
 
 @app.post("/api/sustainability-calc")

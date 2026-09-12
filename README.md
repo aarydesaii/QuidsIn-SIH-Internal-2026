@@ -14,7 +14,7 @@
 | **3.2 Bonus Module C** |  Built | Weather-Based Intelligence & safe spray-window recommendations |
 | **3.2 Bonus Module D** |  Built | Quantified Farm Sustainability Score & resource savings formula (Water, Fungicide, CO2) |
 | **3.2 Bonus Module E** |  Built | Kisan Sahayak GenAI Assistant with Voice/TTS & multilingual capability |
-| **3.2 Bonus Module F** |  Built | IoT Soil Telemetry Simulation (ESP32 Stream: Soil Moisture, Temp, Humidity, pH, NPK) |
+| **3.2 Bonus Module F** |  Built | Soil Analytics — simulated agronomic model (Soil Moisture, Temp, Humidity, pH, NPK). Software only, no hardware |
 | **4.1 Predict CLI Interface** |  Built | Standalone reproducible CLI (`python predict.py --image <path>`) |
 
 ---
@@ -77,7 +77,7 @@ Open your browser at: **`http://localhost:8000`**
                              [Interactive Responsive Web Dashboard & Voice TTS]
                                                     ▲
                                                     │
-         [ESP32 Live IoT Feed] ──── [Micro-Climate Weather] ──── [Kisan Sahayak AI Chat]
+      [Simulated Soil Analytics] ──── [Micro-Climate Weather] ──── [Kisan Sahayak AI Chat]
 ```
 
 ---
