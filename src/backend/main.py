@@ -53,6 +53,10 @@ CONFIDENCE_THRESHOLD = 0.50
 async def home(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
+@app.get("/research", response_class=HTMLResponse)
+async def research(request: Request):
+    return templates.TemplateResponse(request=request, name="research.html")
+
 @app.post("/api/predict")
 async def predict_endpoint(file: UploadFile = File(...)):
     try:
@@ -215,6 +219,151 @@ async def sustainability_calc(
         "rating": "Excellent Sustainability" if score > 80 else "Good Progress"
     })
 
+CROP_TERMS = {
+    "tomato": "Tomato", "tamatar": "Tomato",
+    "potato": "Potato", "aloo": "Potato", "batata": "Potato",
+    "corn": "Corn", "maize": "Corn", "makka": "Corn",
+    "apple": "Apple", "seb": "Apple",
+}
+
+DISEASE_TERMS = {
+    "early blight": "Early_blight", "early-blight": "Early_blight",
+    "late blight": "Late_blight", "late-blight": "Late_blight",
+    "blight": "blight",
+    "rust": "Common_rust",
+    "scab": "Apple_scab",
+}
+
+
+def _format_entry(key, entry, intent):
+    """Render a knowledge-base entry, showing the sections the question asked for."""
+    lines = [f"{entry['crop']} — {entry['disease']}"]
+
+    if entry.get("is_healthy"):
+        lines.append(f"\nSeverity: {entry['severity']}")
+        lines.append("\nMaintenance:")
+        lines += [f"  • {s}" for s in entry["symptoms"]]
+        lines.append(f"\nIrrigation: {entry['irrigation_advice']}")
+        return "\n".join(lines)
+
+    lines.append(f"Severity: {entry['severity']}")
+
+    show_all = intent == "all"
+    if show_all or intent == "symptoms":
+        lines.append("\nSymptoms to look for:")
+        lines += [f"  • {s}" for s in entry["symptoms"]]
+    if show_all or intent == "organic":
+        lines.append("\nOrganic / bio remedies:")
+        lines += [f"  • {s}" for s in entry["organic_remedies"]]
+    if show_all or intent == "chemical":
+        lines.append("\nChemical formulation:")
+        lines.append(f"  {entry['chemical_remedies'][0] if isinstance(entry['chemical_remedies'], list) else entry['chemical_remedies']}")
+    if show_all or intent == "irrigation":
+        lines.append(f"\nIrrigation: {entry['irrigation_advice']}")
+
+    return "\n".join(lines)
+
+
+def _detect_intent(q):
+    if any(w in q for w in ("organic", "natural", "bio", "neem", "jaivik")):
+        return "organic"
+    if any(w in q for w in ("chemical", "fungicide", "dosage", "dose", "spray what", "which medicine", "dawa")):
+        return "chemical"
+    if any(w in q for w in ("symptom", "identify", "looks like", "how to know", "sign", "pehchan")):
+        return "symptoms"
+    if any(w in q for w in ("irrigation", "watering", "water", "pani")):
+        return "irrigation"
+    return "all"
+
+
+def build_grounded_reply(query: str):
+    """Answer from DISEASE_DATABASE where possible. Returns (reply, grounded)."""
+    q = query.lower().strip()
+    if not q:
+        return "Please type a question about your crop.", False
+
+    intent = _detect_intent(q)
+    crops = {c for term, c in CROP_TERMS.items() if term in q}
+    # A specific term ("late blight") must win over the generic "blight" wildcard
+    specific = {d for term, d in DISEASE_TERMS.items() if term in q and d != "blight"}
+    diseases = specific or ({"blight"} if "blight" in q else set())
+
+    matches = []
+    for key, entry in DISEASE_DATABASE.items():
+        crop_part, _, disease_part = key.partition("___")
+        if crops and crop_part not in crops:
+            continue
+        if diseases:
+            if not any(d == disease_part or (d == "blight" and "blight" in disease_part.lower())
+                       for d in diseases):
+                continue
+        elif not crops:
+            continue
+        matches.append((key, entry))
+
+    if matches:
+        diseased = [m for m in matches if not m[1].get("is_healthy")]
+        chosen = diseased or matches
+        if len(chosen) > 3:
+            chosen = chosen[:3]
+        blocks = [_format_entry(k, e, intent) for k, e in chosen]
+        header = ""
+        if len(chosen) > 1:
+            header = f"Found {len(chosen)} matching entries in the knowledge base:\n\n"
+        return header + "\n\n———\n\n".join(blocks), True
+
+    # Topic answers that are not disease-specific
+    if any(w in q for w in ("irrigation", "watering", "water", "pani", "drip")):
+        return (
+            "Smart irrigation guidance:\n"
+            "  • Irrigate when soil moisture falls below 30% — the Soil Analytics panel "
+            "on the dashboard shows the current reading.\n"
+            "  • Prefer drip irrigation in 45-minute early-morning cycles; it saves roughly "
+            "40% water against flood irrigation.\n"
+            "  • Never wet the foliage. Most fungal diseases need leaf wetness to establish.\n"
+            "  • Delay irrigation by 24 hours if rain is forecast — check the Weather panel."
+        ), False
+
+    if any(w in q for w in ("fertilizer", "fertiliser", "npk", "nutrient", "urea", "khad")):
+        return (
+            "Soil nutrient guidance:\n"
+            "  • Use neem-coated urea for steady nitrogen release without acidifying the soil.\n"
+            "  • Apply vermicompost at 2 tons/acre before flowering to build microbial activity.\n"
+            "  • Test soil pH before each season — 6.2 to 6.8 suits tomato, potato and corn.\n"
+            "  • Split nitrogen into 2–3 doses rather than one heavy application."
+        ), False
+
+    if any(w in q for w in ("spray", "weather", "wind", "when to", "timing")):
+        return (
+            "Spray timing guidance:\n"
+            "  • Spray only when wind is below 15 km/h — the Weather panel shows live wind speed.\n"
+            "  • Early morning or late evening is best; midday heat evaporates the spray.\n"
+            "  • Do not spray if rain is likely within 6 hours, or it washes off.\n"
+            "  • Always wear gloves and a mask when applying chemical fungicides."
+        ), False
+
+    if any(w in q for w in ("prevent", "avoid", "protect", "healthy", "bachav")):
+        return (
+            "Preventive crop protection:\n"
+            "  • Rotate crops — avoid planting the same family in a field two seasons running.\n"
+            "  • Remove and destroy infected plant debris; do not compost it.\n"
+            "  • Space plants for airflow so foliage dries quickly after dew or rain.\n"
+            "  • Mulch the soil surface to stop spores splashing onto lower leaves.\n"
+            "  • Scout fields every 3 days and photograph anything suspicious."
+        ), False
+
+    known_crops = sorted({e["crop"] for e in DISEASE_DATABASE.values()})
+    return (
+        "I could not match that to my knowledge base. I can answer questions about:\n\n"
+        f"  • Diseases of: {', '.join(known_crops)}\n"
+        "  • Specific conditions: early blight, late blight, common rust, apple scab\n"
+        "  • Topics: irrigation, fertilizer and nutrients, spray timing, prevention\n\n"
+        "Try asking something like \"organic treatment for tomato late blight\", "
+        "\"symptoms of apple scab\", or \"when should I spray\".\n\n"
+        "For a diagnosis, upload a leaf photo to the Diagnostic Scanner on the dashboard."
+    ), False
+
+
 @app.post("/api/chat")
 async def chat_endpoint(query: str = Form(...), lang: str = Form("en")):
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
@@ -235,35 +384,12 @@ async def chat_endpoint(query: str = Form(...), lang: str = Form("en")):
         except Exception:
             pass
 
-    q_low = query.lower()
-    if "blight" in q_low:
-        reply = (
-            "For Blight (Early or Late):\n"
-            "1. Remove and safely dispose of all infected lower leaves.\n"
-            "2. Spray copper oxychloride (3g/L) or cold-pressed neem oil (5ml/L) in the early morning.\n"
-            "3. Shift to drip irrigation — do not wet the leaves during watering!"
-        )
-    elif "irrigation" in q_low or "water" in q_low:
-        reply = (
-            "Smart Irrigation Recommendation:\n"
-            "• If soil moisture is above 35%, delay watering by 24 hours.\n"
-            "• Drip irrigation in 45-minute cycles in early morning saves 40% water and prevents fungal outbreaks."
-        )
-    elif "fertilizer" in q_low or "npk" in q_low:
-        reply = (
-            "Soil Nutrient Guidance:\n"
-            "• Use Neem-coated Urea for steady nitrogen release without soil acidification.\n"
-            "• Supplement with Vermicompost (2 tons/acre) before flowering to enhance beneficial soil microbes."
-        )
-    else:
-        reply = (
-            f"Hello Kisan friend! For your query '{query}', AgriSmart advises:\n"
-            "1. Monitor your crop foliage every 3 days for early leaf spots.\n"
-            "2. Ensure optimal drainage so water doesn't pool near root crowns.\n"
-            "3. Upload a clear photo of any suspicious leaf to our Diagnostic Scanner for an instant AI treatment plan!"
-        )
-
-    return JSONResponse({"reply": reply, "source": "AgriSmart Offline Agro-Expert Engine"})
+    reply, matched = build_grounded_reply(query)
+    return JSONResponse({
+        "reply": reply,
+        "source": "AgriSmart Knowledge Base (grounded)" if matched else "AgriSmart Assistant",
+        "grounded": matched,
+    })
 
 if __name__ == "__main__":
     import uvicorn

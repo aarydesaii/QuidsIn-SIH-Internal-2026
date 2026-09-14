@@ -37,6 +37,16 @@
                     </h1>
                     <p class="text-xs text-emerald-200">Intelligent Agriculture for a Sustainable Future</p>
                 </div>
+
+                <!-- Page Navigation -->
+                <div class="hidden sm:flex items-center gap-1 ml-4 pl-4 border-l border-emerald-700">
+                    <a href="/" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 text-white">
+                        <i class="fa-solid fa-gauge-high mr-1"></i> Dashboard
+                    </a>
+                    <a href="/research" class="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-100 hover:bg-emerald-800 transition">
+                        <i class="fa-solid fa-robot mr-1"></i> Research Assistant
+                    </a>
+                </div>
             </div>
 
             <!-- Live Indicators -->
@@ -313,27 +323,20 @@
                     </div>
                 </div>
 
-                <!-- Farmer AI Assistant (Module E) -->
-                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                <!-- Research Assistant entry point (Module E lives on its own page) -->
+                <a href="/research" class="block bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition group">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
                         <i class="fa-solid fa-robot text-emerald-600"></i>
-                        Kisan Sahayak AI Assistant
+                        Research Assistant
                     </h3>
-
-                    <div id="chat-box" class="h-44 overflow-y-auto bg-slate-50 rounded-2xl p-3 space-y-2 border border-slate-100 text-xs">
-                        <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-slate-700 shadow-sm">
-                            <p class="font-bold text-emerald-800 text-[11px] mb-1">AgriSmart Expert:</p>
-                            Namaste! I am your AI Agronomist. Ask me any question regarding plant diseases, pest cures, weather advisories, or irrigation tips in Hindi, Gujarati, or English!
-                        </div>
-                    </div>
-
-                    <form id="chat-form" onsubmit="sendChatMessage(event)" class="mt-3 flex gap-2">
-                        <input type="text" id="chat-input" placeholder="Type query (e.g. Blight treatment)..." class="flex-1 text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <button type="submit" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition">
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
-                    </form>
-                </div>
+                    <p class="text-xs text-slate-500 mt-1.5">
+                        Ask Kisan Sahayak about crop diseases, treatments, irrigation and spray timing —
+                        answers grounded in the AgriSmart knowledge base.
+                    </p>
+                    <span class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 group-hover:gap-2.5 transition-all">
+                        Open Research Assistant <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </span>
+                </a>
 
             </div>
         </div>
@@ -582,43 +585,6 @@
             }
         }
 
-        // Chat Form
-        async function sendChatMessage(e) {
-            e.preventDefault();
-            const input = document.getElementById('chat-input');
-            const query = input.value.trim();
-            if (!query) return;
-
-            const chatBox = document.getElementById('chat-box');
-            
-            // Append user msg
-            chatBox.innerHTML += `
-                <div class="bg-emerald-100 text-emerald-900 p-2.5 rounded-xl text-right font-medium">
-                    ${query}
-                </div>
-            `;
-            input.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            // Form data
-            const fd = new FormData();
-            fd.append('query', query);
-            fd.append('lang', 'en');
-
-            try {
-                const res = await fetch('/api/chat', { method: 'POST', body: fd });
-                const data = await res.json();
-                chatBox.innerHTML += `
-                    <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-slate-700 shadow-sm">
-                        <p class="font-bold text-emerald-800 text-[10px] uppercase mb-1">${data.source}:</p>
-                        ${data.reply.replace(/\n/g, '<br>')}
-                    </div>
-                `;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            } catch (err) {
-                chatBox.innerHTML += `<div class="text-red-600">Error connecting to Kisan Sahayak.</div>`;
-            }
-        }
 
         // Init on page load
         fetchWeather();

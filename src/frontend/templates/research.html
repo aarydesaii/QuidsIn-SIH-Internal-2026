@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Assistant - AgriSmart AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#15803d', secondary: '#166534', accent: '#84cc16' } } }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+    <!-- Top Navigation -->
+    <nav class="bg-emerald-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-leaf text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                        AgriSmart <span class="text-emerald-400 font-extrabold">AI</span>
+                        <span class="text-xs bg-emerald-800 border border-emerald-600 px-2 py-0.5 rounded-full font-normal">SIH-2026 [C-433]</span>
+                    </h1>
+                    <p class="text-xs text-emerald-200">Intelligent Agriculture for a Sustainable Future</p>
+                </div>
+
+                <!-- Page Navigation -->
+                <div class="hidden sm:flex items-center gap-1 ml-4 pl-4 border-l border-emerald-700">
+                    <a href="/" class="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-100 hover:bg-emerald-800 transition">
+                        <i class="fa-solid fa-gauge-high mr-1"></i> Dashboard
+                    </a>
+                    <a href="/research" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 text-white">
+                        <i class="fa-solid fa-robot mr-1"></i> Research Assistant
+                    </a>
+                </div>
+            </div>
+
+            <div class="hidden md:flex items-center space-x-4 text-xs font-medium">
+                <div class="flex items-center space-x-1.5 bg-emerald-800/80 px-3 py-1.5 rounded-lg border border-emerald-700">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Knowledge Base: Grounded</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- Left: suggested topics -->
+            <aside class="lg:col-span-4 space-y-6">
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-emerald-600"></i>
+                        What I can answer
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Answers are retrieved from the AgriSmart agronomic knowledge base, not generated freely.
+                    </p>
+
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-5 mb-2">Crop diseases</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Tomato late blight</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Potato early blight</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Symptoms of apple scab</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Corn common rust</button>
+                    </div>
+
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-5 mb-2">Treatment</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">Organic treatment for tomato late blight</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">Potato early blight chemical dosage</button>
+                    </div>
+
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-5 mb-2">Practice</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">When should I spray</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">Irrigation advice</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">Fertilizer and NPK</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">How to prevent disease</button>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-3xl p-5">
+                    <h3 class="text-sm font-bold text-amber-900 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info"></i> Scope
+                    </h3>
+                    <p class="text-xs text-amber-800 mt-1.5 leading-relaxed">
+                        The knowledge base covers tomato, potato, corn and apple. Answers labelled
+                        <span class="font-bold">Grounded</span> come directly from curated agronomic entries.
+                        For a diagnosis from a photograph, use the
+                        <a href="/" class="underline font-semibold">Diagnostic Scanner</a>.
+                    </p>
+                </div>
+            </aside>
+
+            <!-- Right: conversation -->
+            <section class="lg:col-span-8">
+                <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 flex flex-col" style="min-height: 34rem;">
+                    <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+                                <i class="fa-solid fa-robot text-emerald-600"></i>
+                                Kisan Sahayak AI Assistant
+                            </h2>
+                            <p class="text-sm text-slate-500 mt-1">
+                                Grounded agronomic guidance for crop disease, treatment and field practice
+                            </p>
+                        </div>
+                        <button onclick="clearChat()" class="shrink-0 px-3 py-1.5 text-xs text-slate-500 hover:text-red-600 bg-white border border-slate-200 rounded-lg shadow-sm transition">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Clear
+                        </button>
+                    </div>
+
+                    <div id="chat-box" class="flex-1 overflow-y-auto py-4 space-y-3 text-sm"></div>
+
+                    <form id="chat-form" onsubmit="sendChatMessage(event)" class="mt-3 flex gap-2 border-t border-slate-100 pt-4">
+                        <input type="text" id="chat-input" autocomplete="off"
+                               placeholder="Ask about a crop disease, treatment, irrigation or spray timing..."
+                               class="flex-1 text-sm px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <button type="submit" id="send-btn" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow transition">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const chatInput = document.getElementById('chat-input');
+
+        const GREETING = "Namaste! I am Kisan Sahayak, your AgriSmart agronomy assistant.\n\n" +
+            "Ask me about crop diseases, organic or chemical treatment, irrigation, spray timing or prevention. " +
+            "Pick a suggestion on the left to get started.";
+
+        function el(tag, className, text) {
+            const node = document.createElement(tag);
+            if (className) node.className = className;
+            if (text !== undefined) node.textContent = text;
+            return node;
+        }
+
+        function addUserMessage(text) {
+            const wrap = el('div', 'flex justify-end');
+            const bubble = el('div', 'bg-emerald-600 text-white px-4 py-2.5 rounded-2xl rounded-br-sm max-w-[80%] whitespace-pre-wrap', text);
+            wrap.appendChild(bubble);
+            chatBox.appendChild(wrap);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function addAssistantMessage(text, source, grounded) {
+            const wrap = el('div', 'flex justify-start');
+            const bubble = el('div', 'bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl rounded-bl-sm max-w-[85%]');
+
+            const head = el('div', 'flex items-center gap-2 mb-1.5');
+            head.appendChild(el('span', 'text-[10px] font-bold text-emerald-800 uppercase tracking-wider', 'Kisan Sahayak'));
+            if (source) {
+                const tagClass = grounded
+                    ? 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200'
+                    : 'text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200';
+                head.appendChild(el('span', tagClass, grounded ? 'GROUNDED' : 'GENERAL'));
+            }
+            bubble.appendChild(head);
+            bubble.appendChild(el('div', 'text-slate-700 whitespace-pre-wrap leading-relaxed', text));
+
+            wrap.appendChild(bubble);
+            chatBox.appendChild(wrap);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function clearChat() {
+            chatBox.innerHTML = '';
+            addAssistantMessage(GREETING, null, false);
+        }
+
+        async function sendChatMessage(e) {
+            e.preventDefault();
+            const query = chatInput.value.trim();
+            if (!query) return;
+
+            addUserMessage(query);
+            chatInput.value = '';
+
+            const btn = document.getElementById('send-btn');
+            btn.disabled = true;
+
+            const thinking = el('div', 'flex justify-start');
+            thinking.appendChild(el('div', 'bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl text-slate-400 text-xs', 'Searching knowledge base...'));
+            chatBox.appendChild(thinking);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const fd = new FormData();
+                fd.append('query', query);
+                fd.append('lang', 'en');
+                const res = await fetch('/api/chat', { method: 'POST', body: fd });
+                const data = await res.json();
+                thinking.remove();
+                addAssistantMessage(data.reply, data.source, data.grounded);
+            } catch (err) {
+                thinking.remove();
+                addAssistantMessage('Could not reach the assistant. Please check the server and try again.', null, false);
+            } finally {
+                btn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        document.querySelectorAll('.suggestion').forEach(btn => {
+            btn.addEventListener('click', () => {
+                chatInput.value = btn.textContent.trim();
+                chatInput.focus();
+                document.getElementById('chat-form').requestSubmit();
+            });
+        });
+
+        addAssistantMessage(GREETING, null, false);
+    </script>
+</body>
+</html>
