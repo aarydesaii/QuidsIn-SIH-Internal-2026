@@ -31,6 +31,8 @@ venv.bak/
 runs/
 *.pt
 model/weights/*.pt
+# The trained model is a required submission deliverable - judges clone and run it
+!model/weights/best.pt
 !model/weights/.gitkeep
 !model/.gitkeep
 

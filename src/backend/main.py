@@ -45,6 +45,10 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
+# Below this top-1 probability the image is treated as out-of-distribution rather than
+# diagnosed. Real leaf photographs score above 0.99; non-leaf inputs sit near 0.20.
+CONFIDENCE_THRESHOLD = 0.50
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
@@ -90,6 +94,22 @@ async def predict_endpoint(file: UploadFile = File(...)):
         else:
             class_name = "Tomato___Early_blight"
             confidence = 0.942
+
+        if confidence < CONFIDENCE_THRESHOLD:
+            return JSONResponse({
+                "status": "low_confidence",
+                "confidence": round(confidence * 100, 1),
+                "threshold": round(CONFIDENCE_THRESHOLD * 100, 1),
+                "closest_match": get_disease_info(class_name)["disease"],
+                "message": "This image could not be confidently identified as a crop leaf.",
+                "guidance": [
+                    "Photograph a single leaf filling most of the frame",
+                    "Use daylight and avoid heavy shadow or glare",
+                    "Hold the camera steady and focus on the affected area",
+                ],
+                "image_url": f"/uploads/{filename}",
+                "model_mode": "trained_weights" if model is not None else "simulation_fallback",
+            })
 
         info = get_disease_info(class_name)
 

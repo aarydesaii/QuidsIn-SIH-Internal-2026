@@ -34,12 +34,14 @@ pip install -r requirements.txt
 
 ### Step 2: Test Core Predict Interface (Section 4.1 Requirement)
 ```bash
-python model/predict.py --image data/uploads/sample_leaf.jpg
+python model/predict.py --image data/dataset/Tomato___Early_blight/sample_1.jpg
 ```
 *Expected Output:*
 ```text
 Predicted Class: Tomato___Early_blight
 ```
+The true label is the containing folder name, so the prediction can be checked directly.
+Any image under `data/dataset/<class>/` works the same way.
 
 ### Step 3: Launch Full Web Dashboard
 Run from the repository root:
@@ -65,11 +67,21 @@ report/           Model report
 
 ## 3. Dataset & Training Methodology
 
-- **Training & Validation:** PlantVillage dataset (~54,000 lab-condition leaf images across tomato, potato, corn, apple, etc.).
-- **Evaluation Benchmark:** Field-condition real-world images (PlantDoc style with natural lighting, occlusion, and background clutter).
-- **Overcoming the Lab-to-Field Gap:** 
-  - Transfer learning on `yolov8s-cls` backbone.
-  - Aggressive data augmentation: Mosaic, HSV jitter, random rotation, perspective transform, and cutout to prevent the model from memorizing uniform laboratory backgrounds.
+- **Training & Validation:** PlantVillage dataset, `color` variant — 54,305 lab-condition
+  leaf images across 38 classes (tomato, potato, corn, apple, grape, and others).
+  Split 80/20 stratified per class with `random.seed(42)`: 43,456 train / 10,849 validation.
+- **Evaluation:** Macro-F1 on the held-out 20% validation split. This split is drawn from
+  the same lab distribution as training, so it measures in-distribution performance.
+  No field-condition benchmark was evaluated locally — the organizers' held-out field
+  set is the official test.
+- **Addressing the Lab-to-Field Gap:**
+  - Transfer learning from the ImageNet-pretrained `yolov8s-cls` backbone.
+  - The `color` variant was chosen over `segmented` deliberately: segmented images have
+    their backgrounds removed, which does not match photographs taken by farmers.
+  - Augmentation aimed at outdoor capture conditions — HSV jitter (lighting and white
+    balance), ±15° rotation (hand-held angles), translation and scaling (framing and
+    distance), shear and perspective (off-axis capture), and flips. Mosaic and cutout
+    were not used.
 
 ---
 
@@ -98,12 +110,51 @@ report/           Model report
 
 ## 5. Model Metrics & Evaluation
 
-- **Backbone:** YOLOv8s-cls (Ultralytics PyTorch)
-- **Parameters:** ~11.2M (Lightweight, inference latency < 15ms on standard CPU)
-- **Top-1 Validation Accuracy:** 96.4%
-- **Top-5 Validation Accuracy:** 99.2%
-- **Macro-Averaged F1 Score:** 0.941
-- **Operating Threshold:** Calibrated confidence > 0.80
+Trained on the PlantVillage `color` dataset (54,305 images, 38 classes), split
+80/20 stratified per class with `random.seed(42)`.
+
+| Metric | Value |
+| :--- | :--- |
+| **Macro-F1 (primary metric)** | **0.9915** |
+| Macro precision | 0.9918 |
+| Macro recall | 0.9912 |
+| Top-1 accuracy | 0.9942 |
+| Weighted F1 | 0.9942 |
+| Validation images | 10,849 |
+
+- **Backbone:** YOLOv8s-cls (Ultralytics), ImageNet-pretrained, transfer-learned
+- **Parameters:** 5,123,878 fused / 5,129,414 unfused (12.4 GFLOPs) — 0.3 ms per image on a T4
+- **Training:** 8 epochs at 224×224, batch 64, ~29 minutes on a Tesla T4
+- **Operating threshold:** predictions below **50%** top-1 confidence are rejected rather
+  than reported. Real leaf photographs score above 99%; non-leaf images sit near 20%, so
+  the application asks for a better photo instead of asserting an unreliable diagnosis.
+
+### Reproducing these numbers
+
+```bash
+python model/evaluate.py --data <validation_directory>
+```
+
+Writes `metrics.json`, `classification_report.txt`, `confusion_matrix.csv` and
+`confusion_matrix.png` into `report/`.
+
+### Known limitations
+
+Macro-F1 of 0.9915 is measured **in-distribution** on held-out PlantVillage
+images. PlantVillage is laboratory photography — single detached leaves, plain
+backgrounds, controlled lighting — so this figure should not be read as a
+field-performance estimate, and a drop on field photographs is expected.
+
+The weakest class is Corn Cercospora/Gray leaf spot (F1 0.9029), which is most
+often confused with Corn Northern Leaf Blight (F1 0.9490); both present as
+elongated grey-brown lesions along the leaf veins and are genuinely hard to
+separate from a photograph. Tomato Early blight (0.9600) and Target Spot
+(0.9695) show the same pattern.
+
+The model predicts 38 classes while the agronomic knowledge base holds detailed
+remedies for 15; the remaining classes return a generic advisory.
+
+Full analysis: [`report/model_report.md`](report/model_report.md)
 
 ---
 
