@@ -7,6 +7,8 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -258,6 +260,25 @@
                         <span id="weather-city-badge" class="text-xs bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-full border border-slate-200">Ahmedabad</span>
                     </div>
 
+                    <div class="mb-4 rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
+                        <div class="flex items-center justify-between gap-3 px-3 py-2">
+                            <div>
+                                <p class="text-xs font-bold text-slate-700">Confirm farm location</p>
+                                <p id="weather-location-status" class="text-[11px] text-slate-500">Fetching your location…</p>
+                            </div>
+                            <button id="use-my-location" type="button" class="shrink-0 text-[11px] font-bold text-emerald-700 hover:text-emerald-900">
+                                <i class="fa-solid fa-location-crosshairs mr-1"></i>Use my location
+                            </button>
+                        </div>
+                        <div id="weather-map" class="h-44 w-full"></div>
+                        <div class="flex items-center justify-between gap-3 px-3 py-2 bg-white border-t border-slate-200">
+                            <p class="text-[11px] text-slate-500">Click the map to adjust the pin.</p>
+                            <button id="confirm-weather-location" type="button" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition">
+                                Confirm location
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-3 gap-3 text-center my-4">
                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
                             <p class="text-xs text-slate-400">Temperature</p>
@@ -490,22 +511,81 @@
             }
         }
 
-        // Fetch Weather
-        async function fetchWeather() {
+        let weatherMap;
+        let weatherMarker;
+        let pendingWeatherLocation = { lat: 23.0225, lon: 72.5714 };
+        let confirmedWeatherLocation = null;
+
+        function setWeatherLocation(lat, lon, status) {
+            pendingWeatherLocation = { lat, lon };
+            if (weatherMap) {
+                weatherMap.setView([lat, lon], 13);
+                if (weatherMarker) weatherMarker.setLatLng([lat, lon]);
+                else weatherMarker = L.marker([lat, lon]).addTo(weatherMap);
+            }
+            if (status) document.getElementById('weather-location-status').innerText = status;
+        }
+
+        function initializeWeatherMap() {
+            weatherMap = L.map('weather-map', { zoomControl: true }).setView([23.0225, 72.5714], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(weatherMap);
+            weatherMarker = L.marker([23.0225, 72.5714]).addTo(weatherMap);
+            weatherMap.on('click', event => {
+                setWeatherLocation(event.latlng.lat, event.latlng.lng, 'Location selected on map — confirm to update weather.');
+            });
+            document.getElementById('use-my-location').addEventListener('click', locateUser);
+            document.getElementById('confirm-weather-location').addEventListener('click', confirmWeatherLocation);
+            locateUser();
+        }
+
+        function locateUser() {
+            if (!navigator.geolocation) {
+                document.getElementById('weather-location-status').innerText = 'Geolocation is unavailable — choose a point on the map.';
+                return;
+            }
+            document.getElementById('weather-location-status').innerText = 'Requesting your location…';
+            navigator.geolocation.getCurrentPosition(
+                position => setWeatherLocation(position.coords.latitude, position.coords.longitude, 'Your location found — confirm to update weather.'),
+                () => document.getElementById('weather-location-status').innerText = 'Location permission was unavailable — choose a point on the map.'
+            );
+        }
+
+        async function confirmWeatherLocation() {
+            const button = document.getElementById('confirm-weather-location');
+            button.disabled = true;
+            button.innerText = 'Updating…';
+            confirmedWeatherLocation = { ...pendingWeatherLocation };
+            await fetchWeather(confirmedWeatherLocation);
+            document.getElementById('weather-location-status').innerText = 'Weather updated for the confirmed location.';
+            button.disabled = false;
+            button.innerText = 'Confirm location';
+        }
+
+        // Fetch Weather. The initial Ahmedabad request preserves the existing dashboard state;
+        // confirmed map coordinates then replace it with location-specific weather.
+        async function fetchWeather(location = null) {
             try {
-                const res = await fetch('/api/weather?city=Ahmedabad');
+                const query = location
+                    ? `lat=${encodeURIComponent(location.lat)}&lon=${encodeURIComponent(location.lon)}`
+                    : 'city=Ahmedabad';
+                const res = await fetch('/api/weather?' + query);
                 const w = await res.json();
+                document.getElementById('weather-city-badge').innerText = w.city || 'Selected location';
                 document.getElementById('weather-temp').innerText = w.temp_c + '°C';
                 document.getElementById('weather-humidity').innerText = w.humidity + '%';
                 document.getElementById('weather-wind').innerText = w.wind_kmh + ' km/h';
                 document.getElementById('weather-advisory-title').innerText = w.spray_advisory;
+                document.getElementById('weather-advisory-desc').innerText = `${w.condition}. Rain risk: ${w.rain_risk}. Source: ${w.source}.`;
                 document.getElementById('top-spray-advisory').innerText = w.spray_advisory.split('(')[0];
             } catch (e) {
                 console.log('Weather fetch failed', e);
             }
         }
 
-        // Init on page load
+        initializeWeatherMap();
         fetchWeather();
     </script>
 </body>

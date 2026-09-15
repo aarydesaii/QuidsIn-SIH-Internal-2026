@@ -170,21 +170,30 @@ async def predict_endpoint(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 @app.get("/api/weather")
-async def weather_endpoint(city: str = "Ahmedabad"):
+async def weather_endpoint(city: str = "Ahmedabad", lat: float | None = None, lon: float | None = None):
     api_key = os.environ.get("OPENWEATHER_API_KEY", "")
     if api_key and api_key != "your_key_here":
         try:
-            url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+            if lat is not None and lon is not None:
+                url = (
+                    "https://api.openweathermap.org/data/2.5/weather"
+                    f"?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+                )
+            else:
+                url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
             resp = requests.get(url, timeout=4)
             if resp.status_code == 200:
                 data = resp.json()
+                resolved_city = data.get("name") or city
                 temp = data["main"]["temp"]
                 humidity = data["main"]["humidity"]
                 wind = data["wind"]["speed"]
                 condition = data["weather"][0]["description"].title()
                 spray_ok = wind < 15 and humidity < 80
                 return JSONResponse({
-                    "city": city,
+                    "city": resolved_city,
+                    "latitude": data.get("coord", {}).get("lat", lat),
+                    "longitude": data.get("coord", {}).get("lon", lon),
                     "temp_c": round(temp, 1),
                     "humidity": humidity,
                     "wind_kmh": round(wind * 3.6, 1),
@@ -196,8 +205,52 @@ async def weather_endpoint(city: str = "Ahmedabad"):
         except Exception:
             pass
 
+    # Coordinate-based fallback: Open-Meteo is free and needs no API key, so a
+    # confirmed map location still receives live weather on local installs.
+    if lat is not None and lon is not None:
+        try:
+            url = (
+                "https://api.open-meteo.com/v1/forecast"
+                f"?latitude={lat}&longitude={lon}"
+                "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
+                "&timezone=auto"
+            )
+            resp = requests.get(url, timeout=4)
+            if resp.status_code == 200:
+                current = resp.json().get("current", {})
+                temperature = float(current.get("temperature_2m", 31.4))
+                humidity = int(round(float(current.get("relative_humidity_2m", 64))))
+                wind = float(current.get("wind_speed_10m", 11.2))
+                code = int(current.get("weather_code", 3))
+                conditions = {
+                    0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
+                    45: "Foggy", 48: "Rime Fog", 51: "Light Drizzle", 53: "Drizzle",
+                    55: "Heavy Drizzle", 61: "Light Rain", 63: "Rain", 65: "Heavy Rain",
+                    71: "Light Snow", 73: "Snow", 75: "Heavy Snow", 80: "Rain Showers",
+                    81: "Rain Showers", 82: "Heavy Rain Showers", 95: "Thunderstorm",
+                    96: "Thunderstorm with Hail", 99: "Thunderstorm with Hail",
+                }
+                condition = conditions.get(code, "Variable Conditions")
+                spray_ok = wind < 15 and humidity < 80 and code not in {51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99}
+                return JSONResponse({
+                    "city": "Selected location",
+                    "latitude": lat,
+                    "longitude": lon,
+                    "temp_c": round(temperature, 1),
+                    "humidity": humidity,
+                    "wind_kmh": round(wind, 1),
+                    "condition": condition,
+                    "spray_advisory": "Favorable for spraying" if spray_ok else "Caution: Rain, wind or humidity",
+                    "rain_risk": "High" if code in {51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99} else "Low",
+                    "source": "Open-Meteo Live API"
+                })
+        except Exception:
+            pass
+
     return JSONResponse({
-        "city": city,
+        "city": city if lat is None or lon is None else "Selected location",
+        "latitude": lat,
+        "longitude": lon,
         "temp_c": 31.4,
         "humidity": 64,
         "wind_kmh": 11.2,
