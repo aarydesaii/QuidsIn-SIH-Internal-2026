@@ -9,6 +9,14 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        /* Keep Leaflet's positioned panes below the sticky site navigation while scrolling. */
+        nav.sticky { z-index: 1000; }
+        #weather-map.leaflet-container { z-index: 0; }
+        #weather-map .leaflet-pane { z-index: 1 !important; }
+        #weather-map .leaflet-top,
+        #weather-map .leaflet-bottom { z-index: 2 !important; }
+    </style>
     <script>
         tailwind.config = {
             theme: {
@@ -26,7 +34,7 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
 
     <!-- Top Navigation -->
-    <nav class="bg-emerald-900 text-white shadow-lg sticky top-0 z-50">
+    <nav class="bg-emerald-900 text-white shadow-lg sticky top-0 z-[1000]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-xl shadow-inner">
