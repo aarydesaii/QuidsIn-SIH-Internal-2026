@@ -1,11 +1,12 @@
 ﻿# ==============================================================================
 # AGRISMART AI - OFFICIAL KAGGLE TRAINING NOTEBOOK (SIH 2026)
 # Target: Train YOLOv8 Classification Model on PlantVillage Dataset
-# Deliverable: Download best.pt to place in AgriSmart-AI/model/best.pt
+# Deliverable: place the trained best.pt at model/weights/best.pt
 # ==============================================================================
 
-# CELL 1: Install Ultralytics & PyTorch
-!pip install ultralytics scikit-learn seaborn matplotlib -q
+# CELL 1: Install Ultralytics & PyTorch when running in a fresh Kaggle notebook.
+# Run this in a notebook cell or terminal before executing this file:
+# python -m pip install ultralytics scikit-learn seaborn matplotlib
 
 # CELL 2: Verify GPU is Active (Kaggle Accelerator -> GPU T4 x2)
 import torch
@@ -48,7 +49,7 @@ model = YOLO("yolov8s-cls.pt")  # Transfer learning backbone
 # Train model
 results = model.train(
     data=data_dir,      # Path to dataset folder
-    epochs=15,          # 15-20 epochs is optimal on GPU (~25-35 minutes)
+    epochs=20,          # Current submitted model uses 20 epochs on a GPU
     imgsz=224,          # Standard image resolution
     batch=64,           # Fast batch size on GPU
     device=0,           # GPU 0

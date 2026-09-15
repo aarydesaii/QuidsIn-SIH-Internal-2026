@@ -54,12 +54,12 @@ Open your browser at: **`http://localhost:8000`**
 ```bash
 python -m unittest discover -s tests -v
 ```
-51 tests covering the three pages, the soil advisory engine, every API endpoint,
+56 tests covering the three pages, the soil advisory engine, every API endpoint,
 upload validation, out-of-distribution screening, the knowledge base, and the
 Section 4.1 predict CLI. It uses only the standard library plus what
 `requirements.txt` already installs, so no extra test dependency is needed.
-Tests that need inference skip themselves when `model/weights/best.pt` is absent,
-so a clean checkout still passes.
+Inference tests skip themselves if `model/weights/best.pt` is absent, so the
+test suite remains useful even without the optional model weights.
 
 ### Repository Structure
 ```text
@@ -69,7 +69,7 @@ src/
 model/
     predict.py    MANDATORY predict interface (Section 4.1)
     train.py      Training script
-    weights/      Trained weights (best.pt) — not committed
+    weights/      Trained weights (best.pt) — committed for reproducible inference
 data/             Datasets and uploads — gitignored
 report/           Model report
 ```
