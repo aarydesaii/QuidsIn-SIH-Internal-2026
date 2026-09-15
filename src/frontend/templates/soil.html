@@ -92,6 +92,16 @@
                         Copy the values from your card. Every farmer enrolled in the national scheme has one.
                     </p>
 
+                    <!-- Sample cards: real regional soil profiles, so the page can be
+                         demonstrated and tested without a card in hand. -->
+                    <div class="mb-5 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-flask-vial mr-1"></i> Try a sample card
+                        </p>
+                        <div id="sample-chips" class="flex flex-wrap gap-1.5"></div>
+                        <p id="sample-note" class="hidden text-[11px] text-slate-500 mt-2 leading-relaxed"></p>
+                    </div>
+
                     <div class="space-y-4">
                         <div>
                             <label for="in-n" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -371,8 +381,9 @@
                                 <p>rating          = Low | Medium | High per Soil Health Card band</p>
                                 <p>dose_factor     = 1.25 (Low) | 1.00 (Medium) | 0.75 (High)</p>
                                 <p>dose_per_acre   = crop_RDF_per_ha &divide; 2.471 &times; dose_factor</p>
-                                <p>dap_kg          = P2O5_required &divide; 0.46</p>
-                                <p>urea_kg         = (N_required &minus; dap_kg &times; 0.18) &divide; 0.46</p>
+                                <p>P_carrier       = DAP, or SSP when DAP's own N would overshoot</p>
+                                <p>carrier_kg      = P2O5_required &divide; carrier_P_content</p>
+                                <p>urea_kg         = (N_required &minus; carrier_kg &times; carrier_N) &divide; 0.46</p>
                                 <p>mop_kg          = K2O_required &divide; 0.60</p>
                                 <p>gross_depth_mm  = soil_depth_mm &divide; application_efficiency</p>
                                 <p>litres_per_turn = gross_depth_mm &times; 4046.86 &times; acres</p>
@@ -428,6 +439,82 @@
             'Strongly Alkaline / Sodic':  'bg-red-50 border-red-200 text-red-900',
         };
 
+        // Representative Soil Health Card readings from the major Indian soil
+        // groups. Between them they exercise every branch of the advisory:
+        // acidic and sodic pH, Low/Medium/High on each nutrient, all three soil
+        // textures and all three irrigation methods, plus the legume path where
+        // the phosphorus carrier switches from DAP to SSP.
+        const SAMPLE_CARDS = [
+            {
+                name: 'Gujarat · Black Cotton',
+                note: 'Vertisol near Ahmedabad. Alkaline and potassium-rich but low in nitrogen and organic carbon, which is the classic tomato-belt profile.',
+                n: 210, p: 18, k: 310, ph: 7.8, oc: 0.42,
+                crop: 'Tomato', acres: 2.5, soil: 'clay', irrigation: 'drip',
+            },
+            {
+                name: 'Punjab · Alluvial',
+                note: 'Indo-Gangetic loam from the rice-wheat belt. Decades of urea use have left nitrogen low and organic carbon depleted.',
+                n: 260, p: 22, k: 180, ph: 8.1, oc: 0.38,
+                crop: 'Potato', acres: 5, soil: 'loam', irrigation: 'flood',
+            },
+            {
+                name: 'Kerala · Laterite',
+                note: 'Strongly acidic laterite with high organic carbon but phosphorus locked up by the low pH. Should prescribe lime.',
+                n: 320, p: 8, k: 95, ph: 5.2, oc: 1.10,
+                crop: 'Blueberry', acres: 1, soil: 'sandy', irrigation: 'drip',
+            },
+            {
+                name: 'Nashik · Grape Belt',
+                note: 'Well-managed Deccan plateau vineyard soil, already high in phosphorus and potassium. The plan should cut both doses.',
+                n: 290, p: 28, k: 350, ph: 7.9, oc: 0.55,
+                crop: 'Grape', acres: 3, soil: 'clay', irrigation: 'drip',
+            },
+            {
+                name: 'Rajasthan · Sodic Sandy',
+                note: 'Arid sandy soil above pH 8.5. Needs gypsum, frequent light irrigation, and heavy organic matter addition.',
+                n: 180, p: 12, k: 240, ph: 8.8, oc: 0.25,
+                crop: 'Squash (Pumpkin)', acres: 4, soil: 'sandy', irrigation: 'sprinkler',
+            },
+            {
+                name: 'MP · Soybean Belt',
+                note: 'Malwa plateau legume soil. Soybean fixes its own nitrogen, so the plan should reach for SSP instead of DAP to avoid over-applying N.',
+                n: 240, p: 14, k: 260, ph: 7.2, oc: 0.65,
+                crop: 'Soybean', acres: 6, soil: 'clay', irrigation: 'sprinkler',
+            },
+        ];
+
+        function applySample(index) {
+            const c = SAMPLE_CARDS[index];
+            document.getElementById('in-n').value = c.n;
+            document.getElementById('in-p').value = c.p;
+            document.getElementById('in-k').value = c.k;
+            document.getElementById('in-ph').value = c.ph;
+            document.getElementById('in-oc').value = c.oc;
+            document.getElementById('in-crop').value = c.crop;
+            document.getElementById('in-acres').value = c.acres;
+            document.getElementById('in-soil').value = c.soil;
+            document.getElementById('in-irrigation').value = c.irrigation;
+
+            const note = document.getElementById('sample-note');
+            note.innerText = c.note;
+            note.classList.remove('hidden');
+
+            document.querySelectorAll('#sample-chips button').forEach((chip, i) => {
+                chip.className = i === index
+                    ? 'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-600 text-white transition'
+                    : 'px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-slate-300 text-slate-600 hover:border-emerald-400 hover:text-emerald-700 transition';
+            });
+
+            document.getElementById('shc-form').requestSubmit();
+        }
+
+        function renderSampleChips() {
+            document.getElementById('sample-chips').innerHTML = SAMPLE_CARDS.map((c, i) =>
+                `<button type="button" onclick="applySample(${i})"
+                     class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-slate-300 text-slate-600 hover:border-emerald-400 hover:text-emerald-700 transition">${c.name}</button>`
+            ).join('');
+        }
+
         // Options come from the backend so the dropdowns can never drift out of
         // sync with the crops and soil types the advisory engine actually knows.
         async function loadReference() {
@@ -443,6 +530,7 @@
                 fill('in-soil', ref.soil_types);
                 fill('in-irrigation', ref.irrigation_methods);
                 document.getElementById('in-soil').value = 'loam';
+                renderSampleChips();
 
                 document.getElementById('bands-body').innerHTML = Object.values(ref.rating_bands).map(b => `
                     <tr>

@@ -472,7 +472,7 @@ def build_grounded_reply(query: str):
 
 
 @app.post("/api/chat")
-async def chat_endpoint(query: str = Form(...), lang: str = Form("en")):
+async def chat_endpoint(query: str = Form(""), lang: str = Form("en")):
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
     if gemini_key and gemini_key != "your_key_here":
         try:

@@ -57,12 +57,13 @@ CROP_RDF = {
 FERTILISERS = {
     "urea":  {"name": "Urea",                    "n": 0.46, "p": 0.00,  "k": 0.00, "bag_kg": 45, "price_per_bag": 266},
     "dap":   {"name": "DAP (18-46-0)",           "n": 0.18, "p": 0.46,  "k": 0.00, "bag_kg": 50, "price_per_bag": 1350},
+    "ssp":   {"name": "SSP (Single Super Phosphate)", "n": 0.00, "p": 0.16, "k": 0.00, "bag_kg": 50, "price_per_bag": 450},
     "mop":   {"name": "MOP (Muriate of Potash)", "n": 0.00, "p": 0.00,  "k": 0.60, "bag_kg": 50, "price_per_bag": 1700},
 }
 
 # Cradle-to-gate manufacturing emissions per kg of product. Ammonia synthesis
 # makes urea by far the most carbon-intensive of the three.
-CO2_PER_KG = {"urea": 1.6, "dap": 1.4, "mop": 0.3}
+CO2_PER_KG = {"urea": 1.6, "dap": 1.4, "ssp": 0.2, "mop": 0.3}
 
 # --- Soil and irrigation physics -------------------------------------------
 # Net irrigation depth applied per turn and the interval between turns, set by
@@ -123,20 +124,43 @@ def _organic_carbon_rating(oc):
     return "High", 1.0
 
 
-def _product_plan(n_kg, p_kg, k_kg):
+def _phosphorus_carrier(n_kg, p_kg):
+    """
+    Pick the phosphorus product that does not overshoot the nitrogen target.
+
+    DAP is the default, but it carries 18% nitrogen of its own. For a legume
+    such as soybean, which fixes most of its own nitrogen and therefore has a
+    small N requirement beside a large P requirement, the DAP needed to meet
+    the phosphorus target alone exceeds that requirement -- and fertiliser
+    cannot be un-applied. SSP carries no nitrogen at all (and supplies the
+    sulphur those crops want), so it is the standard carrier in that case.
+    """
+    if p_kg <= 0:
+        return "dap"
+    dap_kg = p_kg / FERTILISERS["dap"]["p"]
+    return "ssp" if dap_kg * FERTILISERS["dap"]["n"] > n_kg else "dap"
+
+
+def _product_plan(n_kg, p_kg, k_kg, carrier=None):
     """
     Convert an N-P2O5-K2O requirement into actual sacks of product.
 
-    DAP is placed first because it is the phosphorus carrier and also supplies
-    nitrogen; urea then tops up only the nitrogen DAP left short. Sizing urea
-    before DAP would over-apply nitrogen, which is exactly the habit that makes
-    blanket dosing wasteful.
+    The phosphorus carrier is placed first because it may also supply nitrogen;
+    urea then tops up only what that carrier left short. Sizing urea first would
+    over-apply nitrogen, which is exactly the habit that makes blanket dosing
+    wasteful. Pass `carrier` to pin the choice across two plans being compared.
     """
-    dap_kg = p_kg / FERTILISERS["dap"]["p"] if p_kg > 0 else 0.0
-    n_from_dap = dap_kg * FERTILISERS["dap"]["n"]
-    urea_kg = max(0.0, n_kg - n_from_dap) / FERTILISERS["urea"]["n"]
+    if carrier is None:
+        carrier = _phosphorus_carrier(n_kg, p_kg)
+
+    carrier_kg = p_kg / FERTILISERS[carrier]["p"] if p_kg > 0 else 0.0
+    n_from_carrier = carrier_kg * FERTILISERS[carrier]["n"]
+    urea_kg = max(0.0, n_kg - n_from_carrier) / FERTILISERS["urea"]["n"]
     mop_kg = k_kg / FERTILISERS["mop"]["k"] if k_kg > 0 else 0.0
-    return {"urea": round(urea_kg, 1), "dap": round(dap_kg, 1), "mop": round(mop_kg, 1)}
+
+    plan = {"urea": round(urea_kg, 1), "dap": 0.0, "ssp": 0.0, "mop": round(mop_kg, 1)}
+    plan[carrier] = round(carrier_kg, 1)
+    return plan
 
 
 def _plan_cost(plan):
@@ -185,11 +209,16 @@ def build_advisory(nitrogen, phosphorus, potassium, ph, organic_carbon,
         "k": per_acre["k"] * acres,
     }
 
-    plan = _product_plan(adjusted["n"], adjusted["p"], adjusted["k"])
-    blanket_plan = _product_plan(blanket["n"], blanket["p"], blanket["k"])
+    carrier = _phosphorus_carrier(blanket["n"], blanket["p"])
+    plan = _product_plan(adjusted["n"], adjusted["p"], adjusted["k"], carrier)
+    blanket_plan = _product_plan(blanket["n"], blanket["p"], blanket["k"], carrier)
 
     fertiliser_rows = []
-    for key in ("urea", "dap", "mop"):
+    for key in ("urea", "dap", "ssp", "mop"):
+        # The unused phosphorus carrier is zero in both plans; listing it would
+        # put an empty row on the farmer's shopping list.
+        if plan[key] == 0 and blanket_plan[key] == 0:
+            continue
         product = FERTILISERS[key]
         kg = plan[key]
         fertiliser_rows.append({

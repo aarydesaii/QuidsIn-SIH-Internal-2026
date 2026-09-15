@@ -50,6 +50,17 @@ python -m uvicorn src.backend.main:app --reload
 ```
 Open your browser at: **`http://localhost:8000`**
 
+### Step 4: Run the Test Suite
+```bash
+python -m unittest discover -s tests -v
+```
+51 tests covering the three pages, the soil advisory engine, every API endpoint,
+upload validation, out-of-distribution screening, the knowledge base, and the
+Section 4.1 predict CLI. It uses only the standard library plus what
+`requirements.txt` already installs, so no extra test dependency is needed.
+Tests that need inference skip themselves when `model/weights/best.pt` is absent,
+so a clean checkout still passes.
+
 ### Repository Structure
 ```text
 src/
