@@ -1,4 +1,4 @@
-﻿import os
+import os
 import io
 import sys
 import uuid
@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import requests
 
 from src.backend.disease_kb import get_disease_info, DISEASE_DATABASE
+from src.backend.ood_guard import screen, rejection_guidance, MIN_VIEW_MEAN_CONFIDENCE
 from model.predict import predict, get_model
 
 app = FastAPI(title="AgriSmart AI", description="Intelligent Agriculture Platform for SIH 2026")
@@ -45,9 +46,11 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
-# Below this top-1 probability the image is treated as out-of-distribution rather than
-# diagnosed. Real leaf photographs score above 0.99; non-leaf inputs sit near 0.20.
-CONFIDENCE_THRESHOLD = 0.50
+# Out-of-distribution screening lives in src/backend/ood_guard.py, which averages
+# the softmax over five views and applies thresholds calibrated against the
+# trained weights. A bare top-1 cutoff is not enough: a flat grey image still
+# scores 0.575 on this model, so any single threshold below that passes junk
+# through as a confident diagnosis.
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -91,28 +94,32 @@ async def predict_endpoint(file: UploadFile = File(...)):
 
         model = get_model()
         if model is not None:
-            results = model(str(filepath), verbose=False)
-            top1_idx = results[0].probs.top1
-            class_name = results[0].names[top1_idx]
-            confidence = float(results[0].probs.top1conf)
+            verdict = screen(model, str(filepath))
         else:
-            class_name = "Tomato___Early_blight"
-            confidence = 0.942
+            verdict = {
+                "accepted": True,
+                "class_name": "Tomato___Early_blight",
+                "confidence": 0.942,
+                "failed_checks": [],
+                "diagnostics": {},
+            }
 
-        if confidence < CONFIDENCE_THRESHOLD:
+        class_name = verdict["class_name"]
+        confidence = verdict["confidence"]
+        model_mode = "trained_weights" if model is not None else "simulation_fallback"
+
+        if not verdict["accepted"]:
             return JSONResponse({
                 "status": "low_confidence",
                 "confidence": round(confidence * 100, 1),
-                "threshold": round(CONFIDENCE_THRESHOLD * 100, 1),
+                "threshold": round(MIN_VIEW_MEAN_CONFIDENCE * 100, 1),
                 "closest_match": get_disease_info(class_name)["disease"],
-                "message": "This image could not be confidently identified as a crop leaf.",
-                "guidance": [
-                    "Photograph a single leaf filling most of the frame",
-                    "Use daylight and avoid heavy shadow or glare",
-                    "Hold the camera steady and focus on the affected area",
-                ],
+                "message": "This image could not be confidently matched to a crop the model was trained on.",
+                "guidance": rejection_guidance(verdict["failed_checks"]),
+                "failed_checks": verdict["failed_checks"],
+                "diagnostics": verdict["diagnostics"],
                 "image_url": f"/uploads/{filename}",
-                "model_mode": "trained_weights" if model is not None else "simulation_fallback",
+                "model_mode": model_mode,
             })
 
         info = get_disease_info(class_name)
@@ -131,8 +138,9 @@ async def predict_endpoint(file: UploadFile = File(...)):
             "chemical_remedies": info["chemical_remedies"],
             "irrigation_advice": info["irrigation_advice"],
             "sustainability_impact": info["sustainability_impact"],
+            "diagnostics": verdict["diagnostics"],
             "image_url": f"/uploads/{filename}",
-            "model_mode": "trained_weights" if model is not None else "simulation_fallback"
+            "model_mode": model_mode
         })
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)

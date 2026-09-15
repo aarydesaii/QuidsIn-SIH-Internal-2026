@@ -49,3 +49,6 @@ Thumbs.db
 # Uploaded runtime test files (keep sample_leaf.jpg)
 data/uploads/*
 !data/uploads/sample_leaf.jpg
+
+# Regenerated deterministically by scripts/calibrate_guard.py
+data/ood_probes/
