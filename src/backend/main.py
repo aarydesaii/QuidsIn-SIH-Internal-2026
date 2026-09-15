@@ -1,6 +1,7 @@
 import os
 import io
 import sys
+import math
 import uuid
 import random
 import datetime
@@ -45,6 +46,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_FARM_ACRES = 100_000
 
 # Out-of-distribution screening lives in src/backend/ood_guard.py, which averages
 # the softmax over five views and applies thresholds calibrated against the
@@ -98,6 +100,8 @@ async def predict_endpoint(file: UploadFile = File(...)):
         else:
             verdict = {
                 "accepted": True,
+                "provisional": False,
+                "tier": "confirmed",
                 "class_name": "Tomato___Early_blight",
                 "confidence": 0.942,
                 "failed_checks": [],
@@ -138,6 +142,13 @@ async def predict_endpoint(file: UploadFile = File(...)):
             "chemical_remedies": info["chemical_remedies"],
             "irrigation_advice": info["irrigation_advice"],
             "sustainability_impact": info["sustainability_impact"],
+            "tier": verdict["tier"],
+            "provisional": verdict["provisional"],
+            "provisional_note": (
+                "Image quality is below the confident-diagnosis threshold. Treat this as a "
+                "likely match and re-photograph the leaf in even daylight before spraying."
+                if verdict["provisional"] else None
+            ),
             "diagnostics": verdict["diagnostics"],
             "image_url": f"/uploads/{filename}",
             "model_mode": model_mode
@@ -211,12 +222,26 @@ async def sustainability_calc(
     irrigation_type: str = Form("drip"),
     crop: str = Form("Tomato")
 ):
+    if not math.isfinite(acres) or acres <= 0:
+        return JSONResponse(
+            {"status": "error", "message": "Acres must be a positive number."},
+            status_code=400,
+        )
+    if acres > MAX_FARM_ACRES:
+        return JSONResponse(
+            {"status": "error", "message": f"Acres must be {MAX_FARM_ACRES:,} or less."},
+            status_code=400,
+        )
+
+    # The saving rate is the whole basis of the score, so it is named rather than
+    # recovered by dividing the two derived figures back into each other.
+    saving_rate = 0.42 if irrigation_type == "drip" else 0.10
     base_water_l = acres * 25000
-    saved_water = base_water_l * 0.42 if irrigation_type == "drip" else base_water_l * 0.10
+    saved_water = base_water_l * saving_rate
     fungicide_reduction_kg = round(acres * 1.8, 1)
     co2_saved_kg = round(saved_water * 0.0004 + fungicide_reduction_kg * 4.2, 1)
     cost_saved_inr = round(saved_water * 0.08 + fungicide_reduction_kg * 850, 0)
-    score = min(100, int(60 + (saved_water / base_water_l) * 40))
+    score = min(100, int(60 + saving_rate * 40))
 
     return JSONResponse({
         "sustainability_score": score,

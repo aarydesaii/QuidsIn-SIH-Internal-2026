@@ -125,9 +125,22 @@ Trained on the PlantVillage `color` dataset (54,305 images, 38 classes), split
 - **Backbone:** YOLOv8s-cls (Ultralytics), ImageNet-pretrained, transfer-learned
 - **Parameters:** 5,123,878 fused / 5,129,414 unfused (12.4 GFLOPs) — 0.3 ms per image on a T4
 - **Training:** 8 epochs at 224×224, batch 64, ~29 minutes on a Tesla T4
-- **Operating threshold:** predictions below **50%** top-1 confidence are rejected rather
-  than reported. Real leaf photographs score above 99%; non-leaf images sit near 20%, so
-  the application asks for a better photo instead of asserting an unreliable diagnosis.
+- **Out-of-distribution screening:** a single confidence cutoff cannot work here, because
+  the two populations overlap — a blank white frame scores **84.8%** on this model while a
+  genuinely blurred leaf scores **57.8%**. Each upload is averaged over five views
+  (original, two flips, centre crop, flipped crop) and graded into three tiers by
+  [`src/backend/ood_guard.py`](src/backend/ood_guard.py):
+
+  | Tier | Condition | Behaviour |
+  | :--- | :--- | :--- |
+  | **Reject** | edge density < 1.5, or confidence < 0.45, or entropy > 0.60 | No diagnosis; photo guidance shown |
+  | **Provisional** | passes the floor but not all confirmed checks | Diagnosis shown with a "verify before spraying" warning |
+  | **Confirmed** | confidence ≥ 0.85, entropy ≤ 0.25, view agreement ≥ 0.80, weakest view ≥ 0.60 | Diagnosis shown normally |
+
+  The edge-density floor is structural rather than probabilistic: flat frames (a wall, the
+  sky, a lens cap) carry almost no edge energy, while every real leaf photograph measured
+  carries at least 1.63. This catches the blank-image case that confidence alone misses.
+  Thresholds are checked by `scripts/calibrate_guard.py` and must be re-run after retraining.
 
 ### Reproducing these numbers
 

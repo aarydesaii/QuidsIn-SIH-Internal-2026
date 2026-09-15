@@ -26,12 +26,31 @@ from PIL import Image
 #   view agreement            min 1.000                   min 0.600
 #   weakest single view       5th pct 0.876               max 0.575
 #
-# Thresholds sit inside those gaps, biased towards the in-distribution floor so a
-# genuine leaf photo is never rejected.
+# Thresholds for the CONFIRMED tier. A photo clearing all four is reported as a
+# straight diagnosis.
 MIN_VIEW_MEAN_CONFIDENCE = 0.85
 MAX_NORMALISED_ENTROPY = 0.25
 MIN_VIEW_AGREEMENT = 0.80
 MIN_WEAKEST_VIEW_CONFIDENCE = 0.60
+
+# Those four thresholds were calibrated against clean laboratory photographs, whose
+# view-mean confidence never drops below 0.934. Field photographs are not that
+# clean: measured over the sample set degraded with blur, low light, background
+# clutter and sensor noise, genuine leaves fall as low as 0.298, and 38% of them
+# failed the CONFIRMED bar. Rejecting those outright tells a farmer holding a real
+# diseased leaf that the crop is unrecognisable.
+#
+# Confidence alone cannot fix this, because the two populations overlap: a blank
+# white frame scores 0.848 while a genuinely blurred leaf scores 0.578. So the
+# floor below is structural rather than probabilistic. Flat or near-flat frames -
+# a wall, the sky, a lens cap, a solid colour - carry almost no edge energy, while
+# every real leaf photograph measured carries at least 1.63.
+MIN_EDGE_DENSITY = 1.5
+
+# Floor for showing anything at all. Between this floor and the CONFIRMED bar the
+# prediction is returned as PROVISIONAL: shown, but flagged for verification.
+MIN_USABLE_CONFIDENCE = 0.45
+MAX_USABLE_ENTROPY = 0.60
 
 # Averaging the softmax over flips and a centre crop costs one batched forward
 # pass (~160 ms on CPU against ~50 ms for a single view). A single view is easy
@@ -50,13 +69,19 @@ def _build_views(image: Image.Image):
     ]
 
 
+def _edge_density(image: Image.Image) -> float:
+    """Mean absolute gradient. Near zero for a flat frame, high for real foliage."""
+    grey = np.asarray(image.resize((224, 224)), dtype=np.float64).mean(axis=2)
+    return float(np.abs(np.diff(grey, axis=0)).mean() + np.abs(np.diff(grey, axis=1)).mean())
+
+
 def screen(model, image_path: str) -> dict:
     """
-    Run augmentation-averaged inference and decide whether the result is
-    trustworthy enough to show as a diagnosis.
+    Run augmentation-averaged inference and grade the result into one of three
+    tiers: "confirmed", "provisional" or "reject".
 
-    Returns a dict with the predicted label, the averaged confidence, an
-    `accepted` flag and the list of checks that failed.
+    Returns a dict with the predicted label, the averaged confidence, `accepted`
+    (true for confirmed and provisional), `provisional`, and the failed checks.
     """
     image = Image.open(image_path).convert("RGB")
     views = _build_views(image)
@@ -80,18 +105,30 @@ def screen(model, image_path: str) -> dict:
     entropy = float(-np.sum(mean_probabilities * np.log(mean_probabilities + 1e-12)))
     normalised_entropy = entropy / math.log(len(mean_probabilities))
 
+    edge = _edge_density(image)
+
     failed = []
-    if view_mean_confidence < MIN_VIEW_MEAN_CONFIDENCE:
+    if edge < MIN_EDGE_DENSITY:
+        failed.append("not_a_photograph")
+    if view_mean_confidence < MIN_USABLE_CONFIDENCE:
         failed.append("confidence")
-    if normalised_entropy > MAX_NORMALISED_ENTROPY:
+    if normalised_entropy > MAX_USABLE_ENTROPY:
         failed.append("ambiguous_distribution")
-    if agreement < MIN_VIEW_AGREEMENT:
-        failed.append("unstable_under_augmentation")
-    if weakest_view < MIN_WEAKEST_VIEW_CONFIDENCE:
-        failed.append("weak_view")
+
+    if failed:
+        tier = "reject"
+    elif (view_mean_confidence >= MIN_VIEW_MEAN_CONFIDENCE
+            and normalised_entropy <= MAX_NORMALISED_ENTROPY
+            and agreement >= MIN_VIEW_AGREEMENT
+            and weakest_view >= MIN_WEAKEST_VIEW_CONFIDENCE):
+        tier = "confirmed"
+    else:
+        tier = "provisional"
 
     return {
-        "accepted": not failed,
+        "accepted": tier != "reject",
+        "provisional": tier == "provisional",
+        "tier": tier,
         "class_name": class_name,
         "confidence": view_mean_confidence,
         "failed_checks": failed,
@@ -100,6 +137,7 @@ def screen(model, image_path: str) -> dict:
             "normalised_entropy": round(normalised_entropy, 4),
             "view_agreement": round(agreement, 3),
             "weakest_view_confidence": round(weakest_view, 4),
+            "edge_density": round(edge, 2),
             "views_evaluated": len(views),
         },
     }
@@ -107,6 +145,7 @@ def screen(model, image_path: str) -> dict:
 
 # Wording is farmer-facing: say what to do next, not which statistic tripped.
 _REJECTION_GUIDANCE = {
+    "not_a_photograph": "This frame is almost flat, so it does not look like a photograph of a leaf - point the camera at the plant",
     "confidence": "Photograph a single leaf filling most of the frame, against a plain background",
     "ambiguous_distribution": "This may be a crop the model was not trained on - it currently covers 14 crops including tomato, potato, corn, apple and grape",
     "unstable_under_augmentation": "Hold the camera steady and re-take the photo in even daylight",
