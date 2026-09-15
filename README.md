@@ -210,5 +210,5 @@ Full analysis: [`report/model_report.md`](report/model_report.md)
 
 ## 6. Video Demo & Links
 
-- **Video Demo (3-5 Minutes):** [Link to Unlisted YouTube/Drive Demo] *(To be attached before final submission)*
+- **Video Demo:** [Open the AgriSmart AI demo](demo/agri_smart_demo.mp4)
 - **Live Deployed Web App:** `http://localhost:8000`
