@@ -227,19 +227,52 @@ async def sustainability_calc(
         "rating": "Excellent Sustainability" if score > 80 else "Good Progress"
     })
 
+# Search terms map to the exact crop prefix used in DISEASE_DATABASE keys.
+# Regional names are included so farmers can ask in Hindi or Gujarati.
 CROP_TERMS = {
-    "tomato": "Tomato", "tamatar": "Tomato",
-    "potato": "Potato", "aloo": "Potato", "batata": "Potato",
-    "corn": "Corn", "maize": "Corn", "makka": "Corn",
-    "apple": "Apple", "seb": "Apple",
+    "tomato": "Tomato", "tamatar": "Tomato", "tameta": "Tomato",
+    "potato": "Potato", "aloo": "Potato", "alu": "Potato", "batata": "Potato",
+    "corn": "Corn_(maize)", "maize": "Corn_(maize)", "makka": "Corn_(maize)", "makai": "Corn_(maize)",
+    "apple": "Apple", "seb": "Apple", "safarjan": "Apple",
+    "grape": "Grape", "angur": "Grape", "draksh": "Grape",
+    "orange": "Orange", "citrus": "Orange", "santra": "Orange", "narangi": "Orange",
+    "peach": "Peach", "aadu": "Peach",
+    "pepper": "Pepper,_bell", "capsicum": "Pepper,_bell", "bell pepper": "Pepper,_bell",
+    "shimla mirch": "Pepper,_bell", "marcha": "Pepper,_bell",
+    "cherry": "Cherry_(including_sour)",
+    "strawberry": "Strawberry",
+    "blueberry": "Blueberry",
+    "raspberry": "Raspberry",
+    "soybean": "Soybean", "soya": "Soybean",
+    "squash": "Squash", "pumpkin": "Squash", "kaddu": "Squash",
 }
 
+# Disease search terms map to a fragment matched against the class key.
 DISEASE_TERMS = {
     "early blight": "Early_blight", "early-blight": "Early_blight",
     "late blight": "Late_blight", "late-blight": "Late_blight",
+    "gray leaf spot": "Cercospora", "grey leaf spot": "Cercospora", "cercospora": "Cercospora",
+    "northern leaf blight": "Northern_Leaf_Blight",
+    "common rust": "Common_rust", "rust": "rust",
+    "scab": "scab",
+    "black rot": "Black_rot",
+    "cedar apple rust": "Cedar_apple_rust",
+    "powdery mildew": "Powdery_mildew", "mildew": "Powdery_mildew",
+    "esca": "Esca", "black measles": "Esca",
+    "isariopsis": "Leaf_blight_(Isariopsis", "leaf blight": "Leaf_blight_(Isariopsis",
+    "huanglongbing": "Haunglongbing", "haunglongbing": "Haunglongbing",
+    "citrus greening": "Haunglongbing", "greening": "Haunglongbing",
+    "bacterial spot": "Bacterial_spot", "bacterial": "Bacterial_spot",
+    "leaf mold": "Leaf_Mold", "leaf mould": "Leaf_Mold",
+    "septoria": "Septoria",
+    "spider mite": "Spider_mites", "spider mites": "Spider_mites", "mite": "Spider_mites",
+    "target spot": "Target_Spot",
+    "yellow leaf curl": "Yellow_Leaf_Curl", "leaf curl": "Yellow_Leaf_Curl", "tylcv": "Yellow_Leaf_Curl",
+    "mosaic virus": "mosaic_virus", "mosaic": "mosaic_virus", "tomv": "mosaic_virus",
+    "leaf scorch": "Leaf_scorch", "scorch": "Leaf_scorch",
     "blight": "blight",
-    "rust": "Common_rust",
-    "scab": "Apple_scab",
+    "virus": "virus",
+    "healthy": "healthy",
 }
 
 
@@ -292,9 +325,21 @@ def build_grounded_reply(query: str):
 
     intent = _detect_intent(q)
     crops = {c for term, c in CROP_TERMS.items() if term in q}
-    # A specific term ("late blight") must win over the generic "blight" wildcard
-    specific = {d for term, d in DISEASE_TERMS.items() if term in q and d != "blight"}
-    diseases = specific or ({"blight"} if "blight" in q else set())
+
+    # Longer search terms are more specific: "late blight" must beat bare "blight",
+    # and "cedar apple rust" must beat bare "rust".
+    hits = sorted((t for t in DISEASE_TERMS if t in q), key=len, reverse=True)
+    # Drop any term wholly contained in a longer match, so "northern leaf blight"
+    # does not also drag in the shorter "leaf blight"
+    kept = []
+    for t in hits:
+        if not any(t in longer for longer in kept):
+            kept.append(t)
+    generic = {"blight", "rust", "virus", "healthy", "mite", "mildew", "bacterial", "mosaic", "scorch", "leaf curl"}
+    specific_hits = [t for t in kept if t not in generic]
+    diseases = {DISEASE_TERMS[t] for t in (specific_hits or kept)}
+
+    wants_healthy = "healthy" in q
 
     matches = []
     for key, entry in DISEASE_DATABASE.items():
@@ -302,12 +347,17 @@ def build_grounded_reply(query: str):
         if crops and crop_part not in crops:
             continue
         if diseases:
-            if not any(d == disease_part or (d == "blight" and "blight" in disease_part.lower())
-                       for d in diseases):
+            if not any(d.lower() in disease_part.lower() for d in diseases):
                 continue
         elif not crops:
             continue
         matches.append((key, entry))
+
+    # Without an explicit "healthy" in the question, prefer the disease entries
+    if matches and not wants_healthy:
+        diseased_only = [m for m in matches if not m[1].get("is_healthy")]
+        if diseased_only:
+            matches = diseased_only
 
     if matches:
         diseased = [m for m in matches if not m[1].get("is_healthy")]
@@ -361,14 +411,18 @@ def build_grounded_reply(query: str):
         ), False
 
     known_crops = sorted({e["crop"] for e in DISEASE_DATABASE.values()})
+    conditions = sorted({e["disease"].split(" (")[0] for e in DISEASE_DATABASE.values()
+                         if not e.get("is_healthy")})
     return (
-        "I could not match that to my knowledge base. I can answer questions about:\n\n"
-        f"  • Diseases of: {', '.join(known_crops)}\n"
-        "  • Specific conditions: early blight, late blight, common rust, apple scab\n"
+        "I could not match that to my knowledge base. I cover "
+        f"{len(DISEASE_DATABASE)} conditions across {len(known_crops)} crops:\n\n"
+        f"  • Crops: {', '.join(known_crops)}\n\n"
+        f"  • Conditions: {', '.join(conditions)}\n\n"
         "  • Topics: irrigation, fertilizer and nutrients, spray timing, prevention\n\n"
         "Try asking something like \"organic treatment for tomato late blight\", "
-        "\"symptoms of apple scab\", or \"when should I spray\".\n\n"
-        "For a diagnosis, upload a leaf photo to the Diagnostic Scanner on the dashboard."
+        "\"symptoms of grape black rot\", \"how do I control spider mites\", "
+        "or \"when should I spray\".\n\n"
+        "For a diagnosis from a photo, use the Diagnostic Scanner on the dashboard."
     ), False
 
 

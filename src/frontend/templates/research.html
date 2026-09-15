@@ -11,6 +11,24 @@
             theme: { extend: { colors: { primary: '#15803d', secondary: '#166534', accent: '#84cc16' } } }
         }
     </script>
+    <style>
+        /* overflow-y:scroll (not auto) keeps the track permanently visible, and
+           scrollbar-gutter reserves its width so content never reflows.
+           scrollbar-width is deliberately NOT set: specifying it makes Chrome
+           ignore the ::-webkit-scrollbar rules below and fall back to an
+           invisible overlay scrollbar. */
+        .chat-scroll {
+            overflow-y: scroll;
+            scrollbar-gutter: stable;
+            scrollbar-color: #86c7a4 #f1f5f9;
+        }
+        .chat-scroll::-webkit-scrollbar { width: 10px; -webkit-appearance: none; }
+        .chat-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: #86c7a4; border-radius: 8px; border: 2px solid #f1f5f9;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb:hover { background: #4b9e78; }
+    </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
 
@@ -66,15 +84,21 @@
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-5 mb-2">Crop diseases</p>
                     <div class="flex flex-wrap gap-1.5">
                         <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Tomato late blight</button>
-                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Potato early blight</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Grape black rot</button>
                         <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Symptoms of apple scab</button>
-                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Corn common rust</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Corn gray leaf spot</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Citrus greening</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Squash powdery mildew</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Strawberry leaf scorch</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg transition">Tomato yellow leaf curl virus</button>
                     </div>
 
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-5 mb-2">Treatment</p>
                     <div class="flex flex-wrap gap-1.5">
                         <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">Organic treatment for tomato late blight</button>
                         <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">Potato early blight chemical dosage</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">How do I control spider mites</button>
+                        <button class="suggestion px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition">Bell pepper bacterial spot</button>
                     </div>
 
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-5 mb-2">Practice</p>
@@ -91,7 +115,10 @@
                         <i class="fa-solid fa-circle-info"></i> Scope
                     </h3>
                     <p class="text-xs text-amber-800 mt-1.5 leading-relaxed">
-                        The knowledge base covers tomato, potato, corn and apple. Answers labelled
+                        The knowledge base covers all 38 conditions the model can detect, across 14 crops
+                        including tomato, potato, corn, apple, grape, orange, peach, pepper, cherry,
+                        strawberry and squash. Regional names work too &mdash; try "makka rust" or
+                        "angur black rot". Answers labelled
                         <span class="font-bold">Grounded</span> come directly from curated agronomic entries.
                         For a diagnosis from a photograph, use the
                         <a href="/" class="underline font-semibold">Diagnostic Scanner</a>.
@@ -101,7 +128,7 @@
 
             <!-- Right: conversation -->
             <section class="lg:col-span-8">
-                <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 flex flex-col" style="min-height: 34rem;">
+                <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 flex flex-col" style="height: calc(100vh - 10rem); min-height: 30rem; max-height: 52rem;">
                     <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
                         <div>
                             <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2.5">
@@ -117,7 +144,15 @@
                         </button>
                     </div>
 
-                    <div id="chat-box" class="flex-1 overflow-y-auto py-4 space-y-3 text-sm"></div>
+                    <!-- min-h-0 lets this flex child shrink so it scrolls instead of stretching the card -->
+                    <div class="relative flex-1 min-h-0">
+                        <div id="chat-box" class="chat-scroll h-full overflow-y-auto py-4 pr-2 space-y-3 text-sm"></div>
+
+                        <button id="jump-latest" onclick="scrollToLatest(true)"
+                                class="hidden absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-emerald-700 text-white text-xs font-bold rounded-full shadow-lg hover:bg-emerald-800 transition">
+                            <i class="fa-solid fa-arrow-down mr-1"></i> Jump to latest
+                        </button>
+                    </div>
 
                     <form id="chat-form" onsubmit="sendChatMessage(event)" class="mt-3 flex gap-2 border-t border-slate-100 pt-4">
                         <input type="text" id="chat-input" autocomplete="off"
@@ -140,6 +175,27 @@
             "Ask me about crop diseases, organic or chemical treatment, irrigation, spray timing or prevention. " +
             "Pick a suggestion on the left to get started.";
 
+        const jumpBtn = document.getElementById('jump-latest');
+
+        function isNearBottom() {
+            return chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 80;
+        }
+
+        // Only follow new messages when the reader is already at the bottom, so
+        // scrolling up through older conversation is never yanked away.
+        function scrollToLatest(force) {
+            if (force || isNearBottom()) {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            updateJumpButton();
+        }
+
+        function updateJumpButton() {
+            jumpBtn.classList.toggle('hidden', isNearBottom());
+        }
+
+        chatBox.addEventListener('scroll', updateJumpButton);
+
         function el(tag, className, text) {
             const node = document.createElement(tag);
             if (className) node.className = className;
@@ -147,12 +203,20 @@
             return node;
         }
 
+        // Whether to follow must be decided BEFORE inserting, since the new node
+        // itself pushes the viewport away from the bottom.
+        function appendMessage(node) {
+            const follow = isNearBottom();
+            chatBox.appendChild(node);
+            scrollToLatest(follow);
+            return node;
+        }
+
         function addUserMessage(text) {
             const wrap = el('div', 'flex justify-end');
             const bubble = el('div', 'bg-emerald-600 text-white px-4 py-2.5 rounded-2xl rounded-br-sm max-w-[80%] whitespace-pre-wrap', text);
             wrap.appendChild(bubble);
-            chatBox.appendChild(wrap);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            return appendMessage(wrap);
         }
 
         function addAssistantMessage(text, source, grounded) {
@@ -171,8 +235,7 @@
             bubble.appendChild(el('div', 'text-slate-700 whitespace-pre-wrap leading-relaxed', text));
 
             wrap.appendChild(bubble);
-            chatBox.appendChild(wrap);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            return appendMessage(wrap);
         }
 
         function clearChat() {
@@ -193,8 +256,7 @@
 
             const thinking = el('div', 'flex justify-start');
             thinking.appendChild(el('div', 'bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl text-slate-400 text-xs', 'Searching knowledge base...'));
-            chatBox.appendChild(thinking);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            appendMessage(thinking);
 
             try {
                 const fd = new FormData();
