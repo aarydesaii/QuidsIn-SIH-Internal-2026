@@ -42,10 +42,22 @@ MIN_WEAKEST_VIEW_CONFIDENCE = 0.60
 #
 # Confidence alone cannot fix this, because the two populations overlap: a blank
 # white frame scores 0.848 while a genuinely blurred leaf scores 0.578. So the
-# floor below is structural rather than probabilistic. Flat or near-flat frames -
-# a wall, the sky, a lens cap, a solid colour - carry almost no edge energy, while
-# every real leaf photograph measured carries at least 1.63.
-MIN_EDGE_DENSITY = 1.5
+# bounds below are structural rather than probabilistic, and being properties of
+# the image they hold regardless of which weights are loaded.
+#
+# Measured mean-absolute-gradient over 105 real leaf photographs (clean and
+# degraded with blur, low light, clutter and noise) against 8 junk inputs:
+#
+#   real leaves    1.63 - 48.81   (5th percentile 3.20, median 19.68)
+#   flat junk      0.00 - 1.66    (white, black, solid colours, a gradient, a drawing)
+#   random noise   97.52
+#
+# Below the floor the frame is too flat to be a photograph of a plant; above the
+# ceiling it carries more high-frequency energy than any real leaf, which means
+# sensor noise or static rather than foliage. Together these bounds reject all 8
+# junk inputs at the cost of a single heavily-darkened real frame.
+MIN_EDGE_DENSITY = 2.0
+MAX_EDGE_DENSITY = 60.0
 
 # Floor for showing anything at all. Between this floor and the CONFIRMED bar the
 # prediction is returned as PROVISIONAL: shown, but flagged for verification.
@@ -110,6 +122,8 @@ def screen(model, image_path: str) -> dict:
     failed = []
     if edge < MIN_EDGE_DENSITY:
         failed.append("not_a_photograph")
+    if edge > MAX_EDGE_DENSITY:
+        failed.append("too_noisy")
     if view_mean_confidence < MIN_USABLE_CONFIDENCE:
         failed.append("confidence")
     if normalised_entropy > MAX_USABLE_ENTROPY:
@@ -146,6 +160,7 @@ def screen(model, image_path: str) -> dict:
 # Wording is farmer-facing: say what to do next, not which statistic tripped.
 _REJECTION_GUIDANCE = {
     "not_a_photograph": "This frame is almost flat, so it does not look like a photograph of a leaf - point the camera at the plant",
+    "too_noisy": "This frame is too grainy to read - clean the lens, add light, and hold the camera steady",
     "confidence": "Photograph a single leaf filling most of the frame, against a plain background",
     "ambiguous_distribution": "This may be a crop the model was not trained on - it currently covers 14 crops including tomato, potato, corn, apple and grape",
     "unstable_under_augmentation": "Hold the camera steady and re-take the photo in even daylight",

@@ -51,10 +51,10 @@ reproducible from a clean run.
 | Backbone | `yolov8s-cls.pt`, ImageNet-pretrained — transfer learning |
 | Parameters | 5,123,878 fused for inference / 5,129,414 unfused (12.4 GFLOPs) |
 | Image size | 224 × 224 |
-| Epochs | 8 |
+| Epochs | 20 |
 | Batch size | 64 |
 | Hardware | NVIDIA Tesla T4 (Kaggle) |
-| Training time | 0.48 hours (~29 minutes) |
+| Training time | ~1.8 hours |
 | Framework | Ultralytics 8.4.152, PyTorch 2.10.0+cu128 |
 
 ### Augmentation
@@ -72,6 +72,17 @@ official test set is field photography.
 | `shear` | 5.0 | Off-axis viewpoints |
 | `perspective` | 0.0005 | Non-perpendicular capture |
 | `flipud` / `fliplr` | 0.5 / 0.5 | Orientation invariance |
+| `erasing` | 0.4 | Partial occlusion — leaves overlapping or partly out of frame |
+
+Ultralytics' classification pipeline exposes no blur or noise parameter, so those
+two were applied to the training images on disk instead: 25% of the train split was
+duplicated once blurred (Gaussian, radius 1.2–2.6) and once with additive Gaussian
+sensor noise (sigma 15–32), enlarging the split from 43,456 to roughly 65,000 images.
+The validation split was left untouched so the reported metrics stay honest.
+
+This step was added after measuring the first training run, which scored 100% on
+clean images but only **44.4% on blurred ones** while remaining 80% confident — the
+most dangerous failure mode for a farmer-facing tool.
 
 ---
 
@@ -83,14 +94,14 @@ completeness but is not the metric of record.
 
 | Metric | Value |
 |---|---|
-| **Macro-F1 (primary)** | **0.9915** |
-| Macro precision | 0.9918 |
-| Macro recall | 0.9912 |
-| Accuracy | 0.9942 |
-| Weighted F1 | 0.9942 |
+| **Macro-F1 (primary)** | **0.9967** |
+| Macro precision | 0.9970 |
+| Macro recall | 0.9964 |
+| Accuracy | 0.9980 |
+| Weighted F1 | 0.9980 |
 | Validation images | 10,849 |
 
-Macro-F1 (0.9915) and weighted F1 (0.9942) are close together, which indicates
+Macro-F1 (0.9967) and weighted F1 (0.9980) are close together, which indicates
 the model is not achieving its score by performing well on large classes while
 neglecting small ones. The smallest validation class, `Potato___healthy` with 30
 images, still reaches F1 0.9831.
@@ -99,13 +110,17 @@ images, still reaches F1 0.9831.
 
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| `Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot` | 0.8942 | 0.9118 | 0.9029 | 102 |
-| `Corn_(maize)___Northern_Leaf_Blight` | 0.9538 | 0.9442 | 0.9490 | 197 |
-| `Tomato___Early_blight` | 0.9600 | 0.9600 | 0.9600 | 200 |
-| `Tomato___Target_Spot` | 0.9747 | 0.9643 | 0.9695 | 280 |
-| `Potato___Late_blight` | 1.0000 | 0.9750 | 0.9873 | 200 |
+| `Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot` | 0.9703 | 0.9608 | 0.9655 | 102 |
+| `Corn_(maize)___Northern_Leaf_Blight` | 0.9798 | 0.9848 | 0.9823 | 197 |
+| `Potato___healthy` | 1.0000 | 0.9667 | 0.9831 | 30 |
+| `Tomato___Early_blight` | 0.9850 | 0.9850 | 0.9850 | 200 |
+| `Grape___healthy` | 0.9882 | 1.0000 | 0.9941 | 84 |
 
 Twenty of the 38 classes reach F1 1.0000 on the validation split.
+
+Against the earlier 8-epoch run, the weakest classes improved most — which is what
+macro-F1 rewards. Corn Cercospora/Gray leaf spot rose from 0.9029 to 0.9655
+(+6.3 points) and Northern Leaf Blight from 0.9490 to 0.9823.
 
 The full per-class table, the confusion matrix, and the machine-readable metric
 summary are reproducible with:
@@ -127,9 +142,9 @@ published at the time of writing, so a direct comparison is not yet possible.
 As an internal reference point, the ImageNet-pretrained `yolov8s-cls` backbone
 before fine-tuning scores effectively zero on this task, because its 1,000
 ImageNet categories contain no crop-disease classes; it predicts unrelated
-labels for every leaf image. The entirety of the 0.9915 macro-F1 is therefore
+labels for every leaf image. The entirety of the 0.9967 macro-F1 is therefore
 attributable to fine-tuning on PlantVillage rather than to the pretrained
-weights, though the pretrained features are what make convergence in 8 epochs
+weights, though the pretrained features are what make convergence in 20 epochs
 possible.
 
 This report will be updated with the official baseline comparison once that
@@ -142,29 +157,24 @@ number is available.
 **The validation score is measured in-distribution and should not be read as a
 field-performance estimate.** PlantVillage consists of laboratory photographs:
 single detached leaves, uniform backgrounds, controlled lighting. The validation
-split is drawn from that same distribution, so 0.9915 macro-F1 measures how well
+split is drawn from that same distribution, so 0.9967 macro-F1 measures how well
 the model classifies lab images resembling those it trained on. The official test
 set is field photography, and a meaningful drop is expected. This gap is the
 central difficulty of the problem statement, not an artifact of this run.
 
 **The dominant failure mode is agronomically genuine, not merely statistical.**
-The two largest off-diagonal cells in the confusion matrix are a single
-bidirectional pair:
-
-| True | Predicted | Count |
-|---|---|---|
-| `Corn_(maize)___Northern_Leaf_Blight` | `Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot` | 11 |
-| `Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot` | `Corn_(maize)___Northern_Leaf_Blight` | 9 |
-
-These 20 errors account for the two weakest classes in the entire model
-(F1 0.9029 and 0.9490). Both diseases present as elongated grey-brown lesions
-running parallel to the leaf veins, and they are difficult for trained
-agronomists to separate from a photograph alone. This is the single clearest
-target for additional training data.
+The two weakest classes remain a single confusable pair: Corn Cercospora / Gray
+leaf spot (F1 0.9655) and Corn Northern Leaf Blight (F1 0.9823), which are
+mistaken for each other. Both present as elongated grey-brown lesions running
+parallel to the leaf veins, and they are difficult for trained agronomists to
+separate from a photograph alone. In the previous 8-epoch run this pair produced
+the two largest off-diagonal cells in the confusion matrix (11 and 9 instances);
+retraining roughly halved that error rate without eliminating it. It remains the
+clearest target for additional training data.
 
 A comparable pattern appears among the tomato classes, where Target Spot, Early
-blight and Spider mite damage are mutually confused (7, 4, 3 and 2 instances in
-the largest cells) — all produce irregular necrotic leaf spotting.
+blight and Spider mite damage are mutually confused — all produce irregular
+necrotic leaf spotting.
 
 **One cross-crop confusion is biologically coherent.** Five `Potato___Late_blight`
 images were classified as `Tomato___Late_blight`. Both diseases are caused by the
@@ -190,7 +200,9 @@ remedies for 15. The remaining classes resolve to a generic advisory that direct
 the farmer to their local Krishi Vigyan Kendra. Diagnosis is correct for all 38;
 the depth of the accompanying guidance varies.
 
-**Eight epochs is a deadline-constrained choice.** Training was capped at 8 epochs
-to fit the submission window. The loss curve had not fully plateaued, so a longer
-run would likely yield a modest improvement, most plausibly on the weak corn
-classes.
+**Robustness was measured, not assumed.** The model is now accurate under blur,
+sensor noise, low light, over-exposure, low contrast, 25-degree rotation and heavy
+JPEG compression (mean 99.3% across nine conditions, worst case 95.6%). The
+remaining soft spot is background clutter at 97.8%, since PlantVillage contains no
+cluttered scenes at all; adding real field imagery such as PlantDoc is the natural
+next step and would target the same weakness as the lab-to-field gap above.

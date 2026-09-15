@@ -126,16 +126,18 @@ Trained on the PlantVillage `color` dataset (54,305 images, 38 classes), split
 
 | Metric | Value |
 | :--- | :--- |
-| **Macro-F1 (primary metric)** | **0.9915** |
-| Macro precision | 0.9918 |
-| Macro recall | 0.9912 |
-| Top-1 accuracy | 0.9942 |
-| Weighted F1 | 0.9942 |
+| **Macro-F1 (primary metric)** | **0.9967** |
+| Macro precision | 0.9970 |
+| Macro recall | 0.9964 |
+| Top-1 accuracy | 0.9980 |
+| Weighted F1 | 0.9980 |
 | Validation images | 10,849 |
 
 - **Backbone:** YOLOv8s-cls (Ultralytics), ImageNet-pretrained, transfer-learned
 - **Parameters:** 5,123,878 fused / 5,129,414 unfused (12.4 GFLOPs) — 0.3 ms per image on a T4
-- **Training:** 8 epochs at 224×224, batch 64, ~29 minutes on a Tesla T4
+- **Training:** 20 epochs at 224×224, batch 64, on a Tesla T4. The train split is
+  enlarged with blur and sensor-noise copies of 25% of the images (~65,000 total),
+  because Ultralytics classification exposes no blur or noise augmentation parameter.
 - **Out-of-distribution screening:** a single confidence cutoff cannot work here, because
   the two populations overlap — a blank white frame scores **84.8%** on this model while a
   genuinely blurred leaf scores **57.8%**. Each upload is averaged over five views
@@ -144,13 +146,17 @@ Trained on the PlantVillage `color` dataset (54,305 images, 38 classes), split
 
   | Tier | Condition | Behaviour |
   | :--- | :--- | :--- |
-  | **Reject** | edge density < 1.5, or confidence < 0.45, or entropy > 0.60 | No diagnosis; photo guidance shown |
+  | **Reject** | edge density outside 2.0–60.0, or confidence < 0.45, or entropy > 0.60 | No diagnosis; photo guidance shown |
   | **Provisional** | passes the floor but not all confirmed checks | Diagnosis shown with a "verify before spraying" warning |
   | **Confirmed** | confidence ≥ 0.85, entropy ≤ 0.25, view agreement ≥ 0.80, weakest view ≥ 0.60 | Diagnosis shown normally |
 
-  The edge-density floor is structural rather than probabilistic: flat frames (a wall, the
-  sky, a lens cap) carry almost no edge energy, while every real leaf photograph measured
-  carries at least 1.63. This catches the blank-image case that confidence alone misses.
+  The edge-density bounds are structural rather than probabilistic, so they hold whichever
+  weights are loaded. Measured over 105 real leaf photographs (clean and degraded) against
+  8 junk inputs: real leaves span **1.63–48.81**, flat frames (a wall, the sky, a lens cap,
+  a solid colour) sit at **0.00–1.66**, and random sensor noise reaches **97.5**. The floor
+  catches the blank-frame case that confidence alone misses — a white frame scored 84.8% on
+  the previous model — and the ceiling catches static. Together they reject all 8 junk
+  inputs at the cost of one heavily-darkened real frame.
   Thresholds are checked by `scripts/calibrate_guard.py` and must be re-run after retraining.
 
 ### Reproducing these numbers
@@ -164,19 +170,39 @@ Writes `metrics.json`, `classification_report.txt`, `confusion_matrix.csv` and
 
 ### Known limitations
 
-Macro-F1 of 0.9915 is measured **in-distribution** on held-out PlantVillage
+Macro-F1 of 0.9967 is measured **in-distribution** on held-out PlantVillage
 images. PlantVillage is laboratory photography — single detached leaves, plain
 backgrounds, controlled lighting — so this figure should not be read as a
 field-performance estimate, and a drop on field photographs is expected.
 
-The weakest class is Corn Cercospora/Gray leaf spot (F1 0.9029), which is most
-often confused with Corn Northern Leaf Blight (F1 0.9490); both present as
-elongated grey-brown lesions along the leaf veins and are genuinely hard to
-separate from a photograph. Tomato Early blight (0.9600) and Target Spot
-(0.9695) show the same pattern.
+The weakest class remains Corn Cercospora/Gray leaf spot (F1 0.9655), most often
+confused with Corn Northern Leaf Blight (F1 0.9823); both present as elongated
+grey-brown lesions along the leaf veins and are genuinely hard to separate from a
+photograph. Tomato Early blight (0.9850) shows the same pattern.
 
-The model predicts 38 classes while the agronomic knowledge base holds detailed
-remedies for 15; the remaining classes return a generic advisory.
+### Degradation robustness
+
+Because the official test set is field photography, the model was measured against
+the sample set under nine capture conditions. The first training run was accurate
+on clean images but collapsed on blur, so the train split was enlarged with blur
+and sensor-noise copies and retrained:
+
+| Condition | 8-epoch run | Current model |
+| :--- | ---: | ---: |
+| Clean | 100.0% | 100.0% |
+| **Blur** | **44.4%** | **100.0%** |
+| **Sensor noise** | **53.3%** | **95.6%** |
+| Background clutter | 93.3% | 97.8% |
+| Low light / bright / low contrast | 100.0% | 100.0% |
+| Rotation 25° | 100.0% | 100.0% |
+| JPEG quality 20 | 100.0% | 100.0% |
+| **Mean** | **87.9%** | **99.3%** |
+
+The earlier run failed *confidently* on blurred images (mean 80.3% confidence while
+only 44.4% correct), which is the most dangerous failure mode for a farmer-facing
+tool. Reproduce with `scripts/` against `data/dataset`.
+
+The model predicts 38 classes and the agronomic knowledge base now covers all 38.
 
 Full analysis: [`report/model_report.md`](report/model_report.md)
 
