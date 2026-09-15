@@ -3,7 +3,6 @@ import io
 import sys
 import math
 import uuid
-import random
 import datetime
 from pathlib import Path
 from typing import Optional
@@ -22,6 +21,9 @@ import requests
 
 from src.backend.disease_kb import get_disease_info, DISEASE_DATABASE
 from src.backend.ood_guard import screen, rejection_guidance, MIN_VIEW_MEAN_CONFIDENCE
+from src.backend.soil_advisor import (
+    build_advisory, CROP_RDF, SOIL_TYPES, IRRIGATION_METHODS, RATING_BANDS,
+)
 from model.predict import predict, get_model
 
 app = FastAPI(title="AgriSmart AI", description="Intelligent Agriculture Platform for SIH 2026")
@@ -54,13 +56,25 @@ MAX_FARM_ACRES = 100_000
 # scores 0.575 on this model, so any single threshold below that passes junk
 # through as a confident diagnosis.
 
+# The banner reports the real size of the grounded knowledge base rather than a
+# hard-coded figure, so it stays correct as disease_kb.py grows.
+KB_CROP_COUNT = len({key.split("___")[0] for key in DISEASE_DATABASE if "___" in key})
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html")
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"kb_entries": len(DISEASE_DATABASE), "kb_crops": KB_CROP_COUNT},
+    )
 
 @app.get("/research", response_class=HTMLResponse)
 async def research(request: Request):
     return templates.TemplateResponse(request=request, name="research.html")
+
+@app.get("/soil", response_class=HTMLResponse)
+async def soil(request: Request):
+    return templates.TemplateResponse(request=request, name="soil.html")
 
 @app.post("/api/predict")
 async def predict_endpoint(file: UploadFile = File(...)):
@@ -193,63 +207,69 @@ async def weather_endpoint(city: str = "Ahmedabad"):
         "source": "Simulated Agro-Meteorological Station"
     })
 
-@app.get("/api/soil-analytics")
-async def soil_analytics():
-    moisture = round(random.uniform(28.0, 38.0), 1)
-    temp = round(random.uniform(29.0, 33.5), 1)
-    humidity = round(random.uniform(62.0, 72.0), 1)
-    ph = round(random.uniform(6.4, 6.9), 2)
-    nitrogen = round(random.uniform(140, 180), 0)
-    phosphorus = round(random.uniform(35, 55), 0)
-    potassium = round(random.uniform(190, 240), 0)
-    irrigation_needed = moisture < 30.0
-
-    return JSONResponse({
-        "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
-        "soil_moisture_percent": moisture,
-        "soil_temp_c": temp,
-        "ambient_humidity_percent": humidity,
-        "soil_ph": ph,
-        "npk": {"N": int(nitrogen), "P": int(phosphorus), "K": int(potassium)},
-        "irrigation_action": "IRRIGATION RECOMMENDED (Moisture < 30%)" if irrigation_needed else "OPTIMAL (No Irrigation Needed)",
-        "irrigation_needed": irrigation_needed,
-        "data_source": "Simulated agronomic soil model"
-    })
-
-@app.post("/api/sustainability-calc")
-async def sustainability_calc(
+# The Soil Health Card endpoint replaces the earlier /api/soil-analytics feed,
+# which returned fresh random numbers every 3.5 seconds and so could not support
+# any recommendation. Both it and /api/sustainability-calc are folded into this
+# single call: the scorecard is now derived from the same farmer-supplied card
+# reading as the fertiliser plan, rather than being a disconnected slider.
+@app.post("/api/soil-health-card")
+async def soil_health_card(
+    nitrogen: float = Form(...),
+    phosphorus: float = Form(...),
+    potassium: float = Form(...),
+    ph: float = Form(...),
+    organic_carbon: float = Form(0.6),
+    crop: str = Form("Tomato"),
     acres: float = Form(2.5),
-    irrigation_type: str = Form("drip"),
-    crop: str = Form("Tomato")
+    soil_type: str = Form("loam"),
+    irrigation_method: str = Form("drip"),
 ):
+    def bad(message):
+        return JSONResponse({"status": "error", "message": message}, status_code=400)
+
     if not math.isfinite(acres) or acres <= 0:
-        return JSONResponse(
-            {"status": "error", "message": "Acres must be a positive number."},
-            status_code=400,
-        )
+        return bad("Farm size must be a positive number of acres.")
     if acres > MAX_FARM_ACRES:
-        return JSONResponse(
-            {"status": "error", "message": f"Acres must be {MAX_FARM_ACRES:,} or less."},
-            status_code=400,
-        )
+        return bad(f"Farm size must be {MAX_FARM_ACRES:,} acres or less.")
+    if crop not in CROP_RDF:
+        return bad(f"Unsupported crop: {crop}.")
+    if soil_type not in SOIL_TYPES:
+        return bad(f"Unsupported soil type: {soil_type}.")
+    if irrigation_method not in IRRIGATION_METHODS:
+        return bad(f"Unsupported irrigation method: {irrigation_method}.")
 
-    # The saving rate is the whole basis of the score, so it is named rather than
-    # recovered by dividing the two derived figures back into each other.
-    saving_rate = 0.42 if irrigation_type == "drip" else 0.10
-    base_water_l = acres * 25000
-    saved_water = base_water_l * saving_rate
-    fungicide_reduction_kg = round(acres * 1.8, 1)
-    co2_saved_kg = round(saved_water * 0.0004 + fungicide_reduction_kg * 4.2, 1)
-    cost_saved_inr = round(saved_water * 0.08 + fungicide_reduction_kg * 850, 0)
-    score = min(100, int(60 + saving_rate * 40))
+    # Ranges are wide on purpose: they reject typos and mis-keyed units without
+    # rejecting the genuinely extreme soils that most need the advisory.
+    limits = {
+        "nitrogen": (0.0, 2000.0, "Available nitrogen"),
+        "phosphorus": (0.0, 500.0, "Available phosphorus"),
+        "potassium": (0.0, 2000.0, "Available potassium"),
+        "ph": (2.0, 12.0, "Soil pH"),
+        "organic_carbon": (0.0, 10.0, "Organic carbon"),
+    }
+    values = {
+        "nitrogen": nitrogen, "phosphorus": phosphorus, "potassium": potassium,
+        "ph": ph, "organic_carbon": organic_carbon,
+    }
+    for key, value in values.items():
+        low, high, label = limits[key]
+        if not math.isfinite(value) or not (low <= value <= high):
+            return bad(f"{label} must be between {low:g} and {high:g}.")
 
+    return JSONResponse(build_advisory(
+        nitrogen=nitrogen, phosphorus=phosphorus, potassium=potassium,
+        ph=ph, organic_carbon=organic_carbon, crop=crop, acres=acres,
+        soil_type=soil_type, irrigation_method=irrigation_method,
+    ))
+
+@app.get("/api/soil-reference")
+async def soil_reference():
+    """Crop, soil and rating-band options, so the form is never out of sync with the engine."""
     return JSONResponse({
-        "sustainability_score": score,
-        "water_saved_litres": int(saved_water),
-        "fungicide_reduction_kg": fungicide_reduction_kg,
-        "co2_saved_kg": co2_saved_kg,
-        "cost_saved_inr": int(cost_saved_inr),
-        "rating": "Excellent Sustainability" if score > 80 else "Good Progress"
+        "crops": sorted(CROP_RDF.keys()),
+        "soil_types": [{"value": k, "label": v["label"]} for k, v in SOIL_TYPES.items()],
+        "irrigation_methods": [{"value": k, "label": v["label"]} for k, v in IRRIGATION_METHODS.items()],
+        "rating_bands": RATING_BANDS,
     })
 
 # Search terms map to the exact crop prefix used in DISEASE_DATABASE keys.

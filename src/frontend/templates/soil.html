@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soil &amp; Sustainability - AgriSmart AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#15803d', secondary: '#166534', accent: '#84cc16' } } }
+        }
+    </script>
+    <style>
+        /* The score dial is drawn with a conic gradient so it needs no chart
+           library and stays crisp at any zoom level. */
+        .score-dial {
+            background: conic-gradient(#059669 calc(var(--score) * 1%), #e2e8f0 0);
+        }
+        input[type=number]::-webkit-inner-spin-button { opacity: 0.4; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: #fff; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+    <!-- Top Navigation -->
+    <nav class="bg-emerald-900 text-white shadow-lg sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-leaf text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                        AgriSmart <span class="text-emerald-400 font-extrabold">AI</span>
+                        <span class="hidden sm:inline text-xs bg-emerald-800 border border-emerald-600 px-2 py-0.5 rounded-full font-normal">SIH-2026 [C-433]</span>
+                    </h1>
+                    <p class="hidden sm:block text-xs text-emerald-200">Intelligent Agriculture for a Sustainable Future</p>
+                </div>
+
+                <!-- Page Navigation -->
+                <div class="flex items-center gap-1 ml-2 sm:ml-4 sm:pl-4 sm:border-l border-emerald-700">
+                    <a href="/" class="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-100 hover:bg-emerald-800 transition">
+                        <i class="fa-solid fa-gauge-high sm:mr-1"></i><span class="hidden sm:inline">Dashboard</span>
+                    </a>
+                    <a href="/research" class="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-100 hover:bg-emerald-800 transition">
+                        <i class="fa-solid fa-robot sm:mr-1"></i><span class="hidden sm:inline">Research Assistant</span>
+                    </a>
+                    <a href="/soil" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 text-white">
+                        <i class="fa-solid fa-flask sm:mr-1"></i><span class="hidden sm:inline">Soil &amp; Sustainability</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="hidden md:flex items-center space-x-4 text-xs font-medium">
+                <div class="flex items-center space-x-1.5 bg-emerald-800/80 px-3 py-1.5 rounded-lg border border-emerald-700">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Soil Advisory: Published Formula</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Page heading -->
+        <div class="mb-6">
+            <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+                <i class="fa-solid fa-flask text-emerald-600"></i>
+                Soil &amp; Sustainability
+            </h2>
+            <p class="text-sm text-slate-500 mt-1 max-w-3xl">
+                Enter the four values printed on your government <span class="font-semibold text-slate-700">Soil Health Card</span>
+                and this page returns the fertiliser you actually need to buy, the amendment your soil needs, an irrigation
+                schedule, and the resources you save by dosing to your soil test instead of applying a blanket dose.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- Left: the input form -->
+            <div class="lg:col-span-4 space-y-6 no-print">
+                <form id="shc-form" onsubmit="runAdvisory(event)" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-id-card text-emerald-600"></i>
+                        Your Soil Health Card
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1 mb-5">
+                        Copy the values from your card. Every farmer enrolled in the national scheme has one.
+                    </p>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="in-n" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Available Nitrogen (N) <span class="text-slate-400 normal-case font-medium">kg/ha</span>
+                            </label>
+                            <input type="number" id="in-n" value="245" min="0" max="2000" step="0.1" required
+                                   class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label for="in-p" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Available Phosphorus (P) <span class="text-slate-400 normal-case font-medium">kg/ha</span>
+                            </label>
+                            <input type="number" id="in-p" value="31" min="0" max="500" step="0.1" required
+                                   class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label for="in-k" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Available Potassium (K) <span class="text-slate-400 normal-case font-medium">kg/ha</span>
+                            </label>
+                            <input type="number" id="in-k" value="190" min="0" max="2000" step="0.1" required
+                                   class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="in-ph" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Soil pH</label>
+                                <input type="number" id="in-ph" value="6.8" min="2" max="12" step="0.01" required
+                                       class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label for="in-oc" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                    Org. Carbon <span class="text-slate-400 normal-case font-medium">%</span>
+                                </label>
+                                <input type="number" id="in-oc" value="0.62" min="0" max="10" step="0.01" required
+                                       class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-100">
+
+                        <div>
+                            <label for="in-crop" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Crop</label>
+                            <select id="in-crop" class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="in-acres" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Plot size (acres)</label>
+                                <input type="number" id="in-acres" value="2.5" min="0.1" max="100000" step="0.1" required
+                                       class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label for="in-soil" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Soil type</label>
+                                <select id="in-soil" class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="in-irrigation" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Irrigation method</label>
+                            <select id="in-irrigation" class="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></select>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="shc-btn"
+                            class="mt-5 w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-calculator"></i> Generate My Soil Plan
+                    </button>
+                    <p id="shc-error" class="hidden mt-3 text-xs font-semibold text-red-600 text-center"></p>
+                </form>
+
+                <!-- Reference card so the farmer can sanity-check their own card -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-table-list text-slate-400"></i>
+                        Soil Health Card rating bands
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-slate-400 text-left border-b border-slate-100">
+                                    <th class="pb-2 font-semibold">Nutrient</th>
+                                    <th class="pb-2 font-semibold">Low</th>
+                                    <th class="pb-2 font-semibold">Medium</th>
+                                    <th class="pb-2 font-semibold">High</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bands-body" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-3 leading-relaxed">
+                        A Low rating raises your dose to 125%, Medium keeps it at 100%, High cuts it to 75%.
+                        Each nutrient is corrected on its own.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: the generated plan -->
+            <div class="lg:col-span-8 space-y-6">
+
+                <!-- Empty state -->
+                <div id="empty-state" class="bg-white rounded-3xl p-12 shadow-sm border border-dashed border-slate-300 text-center">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl">
+                        <i class="fa-solid fa-seedling"></i>
+                    </div>
+                    <p class="mt-4 text-sm font-bold text-slate-700">Your soil plan will appear here</p>
+                    <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                        Fill in your Soil Health Card values on the left and press Generate. Sample values for a typical
+                        Gujarat loam plot are pre-filled so you can try it straight away.
+                    </p>
+                </div>
+
+                <!-- Results -->
+                <div id="plan" class="hidden space-y-6">
+
+                    <!-- Nutrient ratings -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                        <div class="flex justify-between items-start gap-4 mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-vial text-emerald-600"></i>
+                                    Soil Test Reading
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5" id="plan-context">—</p>
+                            </div>
+                            <button onclick="window.print()" class="no-print text-xs font-bold text-slate-500 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-print"></i> Print plan
+                            </button>
+                        </div>
+                        <div id="nutrient-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+                    </div>
+
+                    <!-- Fertiliser plan -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-sack-xmark text-amber-600"></i>
+                            What To Buy This Season
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5 mb-4">
+                            Quantities for your full plot, already corrected for your soil test. Bag counts use standard
+                            cooperative sack sizes.
+                        </p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-slate-400 text-left text-xs border-b border-slate-100">
+                                        <th class="pb-2 font-semibold">Product</th>
+                                        <th class="pb-2 font-semibold text-right">Quantity</th>
+                                        <th class="pb-2 font-semibold text-right">Bags</th>
+                                        <th class="pb-2 font-semibold text-right">Cost</th>
+                                        <th class="pb-2 font-semibold text-right">vs blanket dose</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fert-body" class="divide-y divide-slate-100"></tbody>
+                                <tfoot>
+                                    <tr class="border-t-2 border-slate-200">
+                                        <td class="pt-3 text-xs font-bold text-slate-700" colspan="3">Total fertiliser cost</td>
+                                        <td class="pt-3 text-right font-black text-slate-900" id="fert-total">—</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Soil correction + irrigation -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2 mb-4">
+                                <i class="fa-solid fa-mound text-orange-600"></i>
+                                Soil Correction
+                            </h3>
+                            <div id="ph-card" class="rounded-xl border p-4">
+                                <div class="flex items-baseline justify-between">
+                                    <p class="text-xs font-bold uppercase tracking-wider" id="ph-class">—</p>
+                                    <p class="text-2xl font-black" id="ph-value">—</p>
+                                </div>
+                                <p class="text-xs mt-1.5 leading-relaxed" id="ph-advice">—</p>
+                                <p class="text-xs font-bold mt-2.5" id="ph-amendment"></p>
+                            </div>
+                            <div class="mt-4 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                                <div class="flex items-baseline justify-between">
+                                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Organic Carbon</p>
+                                    <p class="text-lg font-black text-slate-800"><span id="oc-value">—</span>%
+                                        <span id="oc-rating" class="text-xs font-bold ml-1">—</span>
+                                    </p>
+                                </div>
+                                <p class="text-xs text-slate-600 mt-1.5">
+                                    Apply <span class="font-bold text-slate-900" id="oc-fym">—</span> of well-rotted
+                                    farmyard manure before sowing to build organic matter.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2 mb-4">
+                                <i class="fa-solid fa-droplet text-cyan-600"></i>
+                                Irrigation Schedule
+                            </h3>
+                            <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
+                                <p class="text-xs font-bold text-cyan-800 uppercase tracking-wider">Irrigate every</p>
+                                <p class="text-3xl font-black text-cyan-900 mt-0.5"><span id="irr-interval">—</span> days</p>
+                                <p class="text-xs text-cyan-700 mt-1" id="irr-holding">—</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 mt-4">
+                                <div class="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                                    <p class="text-[11px] text-slate-500 font-semibold uppercase">Per irrigation</p>
+                                    <p class="text-base font-black text-slate-800 mt-0.5" id="irr-per-turn">—</p>
+                                </div>
+                                <div class="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                                    <p class="text-[11px] text-slate-500 font-semibold uppercase">Whole season</p>
+                                    <p class="text-base font-black text-slate-800 mt-0.5" id="irr-season">—</p>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-3 leading-relaxed" id="irr-note">—</p>
+                        </div>
+                    </div>
+
+                    <!-- Sustainability scorecard -->
+                    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200">
+                        <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-leaf text-lime-600"></i>
+                            Sustainability Scorecard
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5 mb-6">
+                            Scored from the plot details you entered. Every saving below is the measured difference between
+                            this soil-test-based plan and the blanket dose it replaces.
+                        </p>
+
+                        <div class="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                            <!-- Dial -->
+                            <div class="flex-shrink-0 text-center">
+                                <div id="score-dial" class="score-dial w-36 h-36 rounded-full flex items-center justify-center" style="--score: 0">
+                                    <div class="w-28 h-28 rounded-full bg-white flex flex-col items-center justify-center">
+                                        <p class="text-3xl font-black text-emerald-800" id="score-value">—</p>
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">out of 100</p>
+                                    </div>
+                                </div>
+                                <p class="mt-3 text-sm font-bold text-emerald-700" id="score-rating">—</p>
+                            </div>
+
+                            <!-- Breakdown -->
+                            <div class="flex-1 w-full space-y-3" id="score-breakdown"></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center mt-8">
+                            <div class="bg-emerald-50/60 border border-emerald-200 p-4 rounded-2xl">
+                                <p class="text-xs text-emerald-800 font-semibold uppercase">Water Conserved</p>
+                                <p id="sv-water" class="text-xl font-black text-emerald-900 mt-1">—</p>
+                                <p class="text-[10px] text-emerald-600 mt-1">vs flood irrigating this schedule</p>
+                            </div>
+                            <div class="bg-cyan-50/60 border border-cyan-200 p-4 rounded-2xl">
+                                <p class="text-xs text-cyan-800 font-semibold uppercase">Over-use Avoided</p>
+                                <p id="sv-fert" class="text-xl font-black text-cyan-900 mt-1">—</p>
+                                <p class="text-[10px] text-cyan-600 mt-1">fertiliser your soil already had</p>
+                            </div>
+                            <div class="bg-blue-50/60 border border-blue-200 p-4 rounded-2xl">
+                                <p class="text-xs text-blue-800 font-semibold uppercase">CO2 Footprint Cut</p>
+                                <p id="sv-co2" class="text-xl font-black text-blue-900 mt-1">—</p>
+                                <p class="text-[10px] text-blue-600 mt-1">manufacturing + pumping emissions</p>
+                            </div>
+                            <div class="bg-amber-50/60 border border-amber-200 p-4 rounded-2xl">
+                                <p class="text-xs text-amber-800 font-semibold uppercase">Money Saved</p>
+                                <p id="sv-inr" class="text-xl font-black text-amber-900 mt-1">—</p>
+                                <p class="text-[10px] text-amber-600 mt-1">at subsidised cooperative rates</p>
+                            </div>
+                        </div>
+
+                        <div id="correction-note" class="hidden mt-4 p-4 rounded-2xl border border-amber-300 bg-amber-50 flex items-start gap-3">
+                            <i class="fa-solid fa-circle-info text-amber-600 mt-0.5"></i>
+                            <p class="text-xs text-amber-900 leading-relaxed" id="correction-text"></p>
+                        </div>
+
+                        <!-- Published so every number above can be reproduced by hand -->
+                        <details class="mt-6 text-xs text-slate-600 no-print">
+                            <summary class="cursor-pointer font-bold text-slate-700 hover:text-emerald-700">Published formula (Module D &amp; F)</summary>
+                            <div class="mt-2 bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1 font-mono text-[11px] leading-relaxed overflow-x-auto">
+                                <p>rating          = Low | Medium | High per Soil Health Card band</p>
+                                <p>dose_factor     = 1.25 (Low) | 1.00 (Medium) | 0.75 (High)</p>
+                                <p>dose_per_acre   = crop_RDF_per_ha &divide; 2.471 &times; dose_factor</p>
+                                <p>dap_kg          = P2O5_required &divide; 0.46</p>
+                                <p>urea_kg         = (N_required &minus; dap_kg &times; 0.18) &divide; 0.46</p>
+                                <p>mop_kg          = K2O_required &divide; 0.60</p>
+                                <p>gross_depth_mm  = soil_depth_mm &divide; application_efficiency</p>
+                                <p>litres_per_turn = gross_depth_mm &times; 4046.86 &times; acres</p>
+                                <p>water_saved     = flood_season_litres &minus; season_litres</p>
+                                <p>co2_saved       = fertiliser_saved &times; product_CO2 + water_saved &times; 0.0004</p>
+                                <p>score           = irrigation(35) + carbon(25) + pH(20) + precision(20)</p>
+                            </div>
+                        </details>
+                    </div>
+
+                    <!-- Cross-link back to the scanner -->
+                    <a href="/" class="no-print block bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition group">
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-microscope text-emerald-600"></i>
+                            Seeing spots or discolouration on the leaves?
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1.5">
+                            A balanced soil plan prevents the nutrient stress that invites disease, but it cannot diagnose an
+                            active infection. Scan a leaf photo on the dashboard for that.
+                        </p>
+                        <span class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 group-hover:gap-2.5 transition-all">
+                            Open Disease Scanner <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const n = (x) => Number(x).toLocaleString('en-IN');
+
+        // A season's irrigation on even a small plot runs into crores of litres,
+        // which is unreadable in full. Indian farmers read lakh and crore fluently,
+        // so large volumes are shown in those units with the exact figure on hover.
+        function litres(v) {
+            if (v >= 1e7) return (v / 1e7).toFixed(2) + ' crore L';
+            if (v >= 1e5) return (v / 1e5).toFixed(2) + ' lakh L';
+            return n(v) + ' L';
+        }
+
+        const RATING_STYLES = {
+            Low:    { chip: 'bg-red-100 text-red-700 border-red-200',        card: 'bg-red-50/60 border-red-200',        bar: 'bg-red-500',     note: 'Deficient — dose raised to 125%' },
+            Medium: { chip: 'bg-amber-100 text-amber-700 border-amber-200',  card: 'bg-amber-50/60 border-amber-200',    bar: 'bg-amber-500',   note: 'Adequate — standard 100% dose' },
+            High:   { chip: 'bg-emerald-100 text-emerald-700 border-emerald-200', card: 'bg-emerald-50/60 border-emerald-200', bar: 'bg-emerald-500', note: 'Sufficient — dose cut to 75%' },
+        };
+
+        const PH_STYLES = {
+            'Neutral':                    'bg-emerald-50 border-emerald-200 text-emerald-900',
+            'Slightly Acidic':            'bg-amber-50 border-amber-200 text-amber-900',
+            'Slightly Alkaline':          'bg-amber-50 border-amber-200 text-amber-900',
+            'Strongly Acidic':            'bg-red-50 border-red-200 text-red-900',
+            'Strongly Alkaline / Sodic':  'bg-red-50 border-red-200 text-red-900',
+        };
+
+        // Options come from the backend so the dropdowns can never drift out of
+        // sync with the crops and soil types the advisory engine actually knows.
+        async function loadReference() {
+            try {
+                const res = await fetch('/api/soil-reference');
+                const ref = await res.json();
+
+                const fill = (id, items) => {
+                    document.getElementById(id).innerHTML = items
+                        .map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+                };
+                fill('in-crop', ref.crops.map(c => ({ value: c, label: c })));
+                fill('in-soil', ref.soil_types);
+                fill('in-irrigation', ref.irrigation_methods);
+                document.getElementById('in-soil').value = 'loam';
+
+                document.getElementById('bands-body').innerHTML = Object.values(ref.rating_bands).map(b => `
+                    <tr>
+                        <td class="py-2 font-semibold text-slate-700">${b.label.replace(/Available /, '')}</td>
+                        <td class="py-2 text-red-600">&lt; ${b.low}</td>
+                        <td class="py-2 text-amber-600">${b.low}–${b.high}</td>
+                        <td class="py-2 text-emerald-600">&gt; ${b.high}</td>
+                    </tr>`).join('');
+            } catch (err) {
+                document.getElementById('shc-error').innerText = 'Could not reach the advisory server.';
+                document.getElementById('shc-error').classList.remove('hidden');
+            }
+        }
+
+        async function runAdvisory(event) {
+            event.preventDefault();
+            const btn = document.getElementById('shc-btn');
+            const errBox = document.getElementById('shc-error');
+            errBox.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Calculating...`;
+
+            const fd = new FormData();
+            fd.append('nitrogen', document.getElementById('in-n').value);
+            fd.append('phosphorus', document.getElementById('in-p').value);
+            fd.append('potassium', document.getElementById('in-k').value);
+            fd.append('ph', document.getElementById('in-ph').value);
+            fd.append('organic_carbon', document.getElementById('in-oc').value);
+            fd.append('crop', document.getElementById('in-crop').value);
+            fd.append('acres', document.getElementById('in-acres').value);
+            fd.append('soil_type', document.getElementById('in-soil').value);
+            fd.append('irrigation_method', document.getElementById('in-irrigation').value);
+
+            try {
+                const res = await fetch('/api/soil-health-card', { method: 'POST', body: fd });
+                const d = await res.json();
+                if (d.status !== 'success') {
+                    errBox.innerText = d.message || 'Could not generate the plan.';
+                    errBox.classList.remove('hidden');
+                    return;
+                }
+                renderPlan(d);
+            } catch (err) {
+                errBox.innerText = 'Connection error with the advisory server.';
+                errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-calculator"></i> Generate My Soil Plan`;
+            }
+        }
+
+        function renderPlan(d) {
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('plan').classList.remove('hidden');
+
+            document.getElementById('plan-context').innerText =
+                `${d.crop} · ${d.acres} acres · ${d.soil_type} · ${d.irrigation_method} irrigation`;
+
+            // Nutrient ratings
+            document.getElementById('nutrient-grid').innerHTML = d.nutrients.map(nut => {
+                const s = RATING_STYLES[nut.rating];
+                // The bar shows where the reading sits relative to the High band,
+                // so a farmer can see how far off target they are at a glance.
+                const pct = Math.min(100, (nut.value / nut.high_band) * 100);
+                return `
+                <div class="rounded-2xl border p-4 ${s.card}">
+                    <div class="flex justify-between items-start gap-2">
+                        <p class="text-xs font-semibold text-slate-600">${nut.label}</p>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.chip}">${nut.rating}</span>
+                    </div>
+                    <p class="text-2xl font-black text-slate-900 mt-1.5">${nut.value}
+                        <span class="text-xs font-semibold text-slate-400">${nut.unit}</span></p>
+                    <div class="w-full bg-white/70 h-1.5 rounded-full overflow-hidden mt-2.5">
+                        <div class="${s.bar} h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-2">${s.note}</p>
+                </div>`;
+            }).join('');
+
+            // Fertiliser table
+            document.getElementById('fert-body').innerHTML = d.fertilisers.map(f => {
+                const saved = f.saved_kg;
+                const savedCell = saved > 0.05
+                    ? `<span class="text-emerald-600 font-bold">${saved} kg less</span>`
+                    : (saved < -0.05
+                        ? `<span class="text-red-600 font-bold">${Math.abs(saved)} kg more</span>`
+                        : `<span class="text-slate-400">same</span>`);
+                return `
+                <tr>
+                    <td class="py-3 font-semibold text-slate-800">${f.name}</td>
+                    <td class="py-3 text-right font-bold text-slate-900">${n(f.kg)} kg</td>
+                    <td class="py-3 text-right text-slate-600">${f.bags} <span class="text-xs text-slate-400">× ${f.bag_kg}kg</span></td>
+                    <td class="py-3 text-right text-slate-700">₹${n(f.cost_inr)}</td>
+                    <td class="py-3 text-right text-xs">${savedCell}</td>
+                </tr>`;
+            }).join('');
+            document.getElementById('fert-total').innerText = '₹' + n(d.fertiliser_total_cost_inr);
+
+            // Soil correction
+            const sh = d.soil_health;
+            const phCard = document.getElementById('ph-card');
+            phCard.className = 'rounded-xl border p-4 ' + (PH_STYLES[sh.ph_class] || PH_STYLES['Neutral']);
+            document.getElementById('ph-class').innerText = sh.ph_class;
+            document.getElementById('ph-value').innerText = sh.ph;
+            document.getElementById('ph-advice').innerText = sh.ph_advice;
+            document.getElementById('ph-amendment').innerText = sh.amendment_name
+                ? `Apply ${n(sh.amendment_kg)} kg of ${sh.amendment_name} across your ${d.acres} acres.`
+                : '';
+            document.getElementById('oc-value').innerText = sh.organic_carbon;
+            const ocRating = document.getElementById('oc-rating');
+            ocRating.innerText = sh.organic_carbon_rating;
+            ocRating.className = 'text-xs font-bold ml-1 ' + (
+                sh.organic_carbon_rating === 'High' ? 'text-emerald-600'
+                : sh.organic_carbon_rating === 'Medium' ? 'text-amber-600' : 'text-red-600');
+            document.getElementById('oc-fym').innerText = sh.fym_tonnes + ' tonnes';
+
+            // Irrigation
+            const ir = d.irrigation;
+            document.getElementById('irr-interval').innerText = ir.interval_days;
+            document.getElementById('irr-holding').innerText = ir.holding;
+            const perTurn = document.getElementById('irr-per-turn');
+            const season = document.getElementById('irr-season');
+            perTurn.innerText = litres(ir.litres_per_turn);
+            perTurn.title = n(ir.litres_per_turn) + ' litres';
+            season.innerText = litres(ir.season_litres);
+            season.title = n(ir.season_litres) + ' litres';
+            document.getElementById('irr-note').innerText =
+                `${ir.turns_per_season} irrigations across a ${ir.season_days}-day season. `
+                + `${d.irrigation_method} delivery puts ${ir.efficiency_percent}% of pumped water into the root zone.`;
+
+            // Sustainability
+            const su = d.sustainability;
+            document.getElementById('score-dial').style.setProperty('--score', su.score);
+            document.getElementById('score-value').innerText = su.score;
+            document.getElementById('score-rating').innerText = su.rating;
+            document.getElementById('score-breakdown').innerHTML = su.breakdown.map(b => `
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="font-semibold text-slate-600">${b.label}</span>
+                        <span class="font-bold text-slate-800">${b.points} <span class="text-slate-400 font-medium">/ ${b.max}</span></span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: ${(b.points / b.max) * 100}%"></div>
+                    </div>
+                </div>`).join('');
+
+            const water = document.getElementById('sv-water');
+            water.innerText = litres(su.water_saved_litres);
+            water.title = n(su.water_saved_litres) + ' litres';
+            document.getElementById('sv-fert').innerText = su.fertiliser_avoided_kg + ' kg';
+            document.getElementById('sv-co2').innerText = n(su.co2_saved_kg) + ' kg';
+            document.getElementById('sv-inr').innerText = '₹' + n(su.cost_saved_inr);
+
+            // A Low rating raises the dose above the blanket rate. That extra spend
+            // is a correction, not a failure, and saying so keeps the savings tiles
+            // honest instead of quietly netting it off against them.
+            const note = document.getElementById('correction-note');
+            if (su.fertiliser_added_kg > 0) {
+                note.classList.remove('hidden');
+                document.getElementById('correction-text').innerHTML =
+                    `Your soil tested <span class="font-bold">Low in ${su.deficient_nutrients.join(' and ')}</span>, `
+                    + `so this plan adds <span class="font-bold">${su.fertiliser_added_kg} kg</span> of product above the blanket dose `
+                    + `(about <span class="font-bold">₹${n(su.correction_cost_inr)}</span> extra). `
+                    + `That is a corrective investment in a deficient soil, so it is not counted as a saving above.`;
+            } else {
+                note.classList.add('hidden');
+            }
+        }
+
+        loadReference();
+    </script>
+</body>
+</html>

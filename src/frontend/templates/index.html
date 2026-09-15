@@ -46,6 +46,9 @@
                     <a href="/research" class="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-100 hover:bg-emerald-800 transition">
                         <i class="fa-solid fa-robot sm:mr-1"></i><span class="hidden sm:inline">Research Assistant</span>
                     </a>
+                    <a href="/soil" class="px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-100 hover:bg-emerald-800 transition">
+                        <i class="fa-solid fa-flask sm:mr-1"></i><span class="hidden sm:inline">Soil &amp; Sustainability</span>
+                    </a>
                 </div>
             </div>
 
@@ -57,7 +60,7 @@
                 </div>
                 <div class="flex items-center space-x-1.5 bg-emerald-800/80 px-3 py-1.5 rounded-lg border border-emerald-700">
                     <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                    <span>Soil Analytics: Simulated</span>
+                    <span>Knowledge Base: Grounded</span>
                 </div>
             </div>
         </div>
@@ -88,23 +91,23 @@
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
+            <a href="/soil" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition flex items-center space-x-4">
                 <div class="w-12 h-12 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center text-2xl">
                     <i class="fa-solid fa-droplet"></i>
                 </div>
                 <div>
-                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Soil Moisture</p>
-                    <p id="top-moisture" class="text-base font-bold text-cyan-800">Connecting...</p>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Soil Plan</p>
+                    <p class="text-base font-bold text-cyan-800">Fertiliser &amp; Irrigation</p>
                 </div>
-            </div>
+            </a>
 
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-4">
                 <div class="w-12 h-12 rounded-xl bg-lime-100 text-lime-700 flex items-center justify-center text-2xl">
-                    <i class="fa-solid fa-seedling"></i>
+                    <i class="fa-solid fa-book-open"></i>
                 </div>
                 <div>
-                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Eco Score</p>
-                    <p id="top-eco-score" class="text-base font-bold text-lime-800">88 / 100 (Optimal)</p>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Knowledge Base</p>
+                    <p class="text-base font-bold text-lime-800">{{ kb_entries }} diseases &middot; {{ kb_crops }} crops</p>
                 </div>
             </div>
         </div>
@@ -279,56 +282,20 @@
                     </div>
                 </div>
 
-                <!-- Soil Analytics (Module F - Software Simulation) -->
-                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-lg font-bold text-slate-900">
-                                <i class="fa-solid fa-flask text-emerald-600 mr-1"></i>
-                                Soil Analytics
-                            </h3>
-                        </div>
-                        <span class="text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <i class="fa-solid fa-code text-[10px]"></i> Simulated Model
-                        </span>
-                    </div>
-
-                    <div class="space-y-4">
-                        <!-- Moisture Meter -->
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold mb-1">
-                                <span class="text-slate-600">Volumetric Soil Moisture</span>
-                                <span id="soil-moisture-val" class="text-emerald-700 font-bold">34.2%</span>
-                            </div>
-                            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                                <div id="soil-moisture-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 34.2%"></div>
-                            </div>
-                        </div>
-
-                        <!-- Soil pH & Ambient -->
-                        <div class="grid grid-cols-2 gap-3 pt-2">
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-xs text-slate-400">Soil pH</p>
-                                <p id="soil-ph-val" class="text-lg font-bold text-slate-800">6.62</p>
-                                <p class="text-[10px] text-emerald-600 font-medium">Optimal (6.2-6.8)</p>
-                            </div>
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-xs text-slate-400">Soil Temp</p>
-                                <p id="soil-temp-val" class="text-lg font-bold text-slate-800">30.1°C</p>
-                                <p class="text-[10px] text-slate-500 font-medium">Root Zone Healthy</p>
-                            </div>
-                        </div>
-
-                        <!-- Irrigation Automation Action -->
-                        <div id="soil-irrigation-card" class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-emerald-900" id="soil-irrigation-action">OPTIMAL: Soil Moisture Adequate</p>
-                                <p class="text-[10px] text-emerald-700">No irrigation recommended at this time.</p>
-                            </div>
-                            <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
-                        </div>
-                    </div>
-                </div>
+                <!-- Soil & Sustainability entry point (Modules D and F live on their own page) -->
+                <a href="/soil" class="block bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition group">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-flask text-emerald-600"></i>
+                        Soil &amp; Sustainability
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1.5">
+                        Enter your Soil Health Card values to get the exact fertiliser to buy, a pH correction,
+                        an irrigation schedule, and the water, carbon and rupees you save.
+                    </p>
+                    <span class="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 group-hover:gap-2.5 transition-all">
+                        Open Soil Planner <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </span>
+                </a>
 
                 <!-- Research Assistant entry point (Module E lives on its own page) -->
                 <a href="/research" class="block bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition group">
@@ -346,80 +313,6 @@
                 </a>
 
             </div>
-        </div>
-
-        <!-- Bottom Row: Sustainability & Ecological Impact Calculator (Module D) -->
-        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-leaf text-lime-600"></i>
-                        Quantified Sustainability & Ecological Scorecard
-                    </h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Calculates precision resource conservation strictly according to Section 3.2 Module D formula</p>
-                </div>
-            </div>
-
-            <!-- Inputs: the scorecard recalculates from these via /api/sustainability-calc -->
-            <form id="calc-form" onsubmit="updateSustainability(event)" class="flex flex-wrap items-end gap-3 mb-5">
-                <div>
-                    <label for="calc-acres" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Farm size (acres)</label>
-                    <input type="number" id="calc-acres" value="2.5" min="0.1" max="100000" step="0.1"
-                           class="w-32 text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                </div>
-                <div>
-                    <label for="calc-irrigation" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Irrigation</label>
-                    <select id="calc-irrigation" class="text-sm px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <option value="drip">Drip</option>
-                        <option value="flood">Flood / Furrow</option>
-                    </select>
-                </div>
-                <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow transition">
-                    <i class="fa-solid fa-calculator mr-1"></i> Recalculate
-                </button>
-                <p id="calc-error" class="hidden text-xs font-semibold text-red-600 ml-1"></p>
-                <div class="ml-auto text-right">
-                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sustainability Score</p>
-                    <p id="calc-score" class="text-2xl font-black text-emerald-800">76 / 100</p>
-                </div>
-            </form>
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-                <div class="bg-emerald-50/60 border border-emerald-200 p-4 rounded-2xl">
-                    <p class="text-xs text-emerald-800 font-semibold uppercase">Water Conserved</p>
-                    <p id="calc-water" class="text-2xl font-black text-emerald-900 mt-1">26,250 Litres</p>
-                    <p class="text-[10px] text-emerald-600 mt-1">Weekly drip deficit savings</p>
-                </div>
-                <div class="bg-cyan-50/60 border border-cyan-200 p-4 rounded-2xl">
-                    <p class="text-xs text-cyan-800 font-semibold uppercase">Fungicide Reduced</p>
-                    <p id="calc-fungicide" class="text-2xl font-black text-cyan-900 mt-1">4.5 kg</p>
-                    <p class="text-[10px] text-cyan-600 mt-1">Via targeted spot spraying</p>
-                </div>
-                <div class="bg-blue-50/60 border border-blue-200 p-4 rounded-2xl">
-                    <p class="text-xs text-blue-800 font-semibold uppercase">CO2 Footprint Cut</p>
-                    <p id="calc-co2" class="text-2xl font-black text-blue-900 mt-1">29.4 kg</p>
-                    <p class="text-[10px] text-blue-600 mt-1">Reduced pump fuel & chemical energy</p>
-                </div>
-                <div class="bg-amber-50/60 border border-amber-200 p-4 rounded-2xl">
-                    <p class="text-xs text-amber-800 font-semibold uppercase">Estimated Farmer Savings</p>
-                    <p id="calc-inr" class="text-2xl font-black text-amber-900 mt-1">₹5,925</p>
-                    <p class="text-[10px] text-amber-600 mt-1">Per cycle savings</p>
-                </div>
-            </div>
-
-            <!-- Published so the judge can reproduce every number above by hand -->
-            <details class="mt-5 text-xs text-slate-600">
-                <summary class="cursor-pointer font-bold text-slate-700 hover:text-emerald-700">Published formula (Module D)</summary>
-                <div class="mt-2 bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1 font-mono text-[11px] leading-relaxed">
-                    <p>base_water_litres   = acres &times; 25,000</p>
-                    <p>saving_rate         = 0.42 (drip) | 0.10 (flood/furrow)</p>
-                    <p>water_saved         = base_water_litres &times; saving_rate</p>
-                    <p>fungicide_saved_kg  = acres &times; 1.8</p>
-                    <p>co2_saved_kg        = water_saved &times; 0.0004 + fungicide_saved_kg &times; 4.2</p>
-                    <p>cost_saved_inr      = water_saved &times; 0.08 + fungicide_saved_kg &times; 850</p>
-                    <p>sustainability_score = min(100, 60 + saving_rate &times; 40)</p>
-                </div>
-            </details>
         </div>
 
     </main>
@@ -612,70 +505,8 @@
             }
         }
 
-        // Fetch soil analytics (Polling every 3.5s)
-        async function fetchSoilAnalytics() {
-            try {
-                const res = await fetch('/api/soil-analytics');
-                const soil = await res.json();
-                
-                document.getElementById('soil-moisture-val').innerText = soil.soil_moisture_percent + '%';
-                document.getElementById('soil-moisture-bar').style.width = soil.soil_moisture_percent + '%';
-                document.getElementById('soil-ph-val').innerText = soil.soil_ph;
-                document.getElementById('soil-temp-val').innerText = soil.soil_temp_c + '°C';
-                document.getElementById('top-moisture').innerText = soil.soil_moisture_percent + '% (Volumetric)';
-                
-                const actionCard = document.getElementById('soil-irrigation-card');
-                const actionText = document.getElementById('soil-irrigation-action');
-                actionText.innerText = soil.irrigation_action;
-
-                if (soil.irrigation_needed) {
-                    actionCard.className = 'bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center justify-between';
-                } else {
-                    actionCard.className = 'bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between';
-                }
-            } catch (e) {
-                console.log('Soil analytics fetch error', e);
-            }
-        }
-
-
         // Init on page load
         fetchWeather();
-        // Module D: scorecard is computed server-side, never hardcoded
-        async function updateSustainability(e) {
-            if (e) e.preventDefault();
-            const errBox = document.getElementById('calc-error');
-            errBox.classList.add('hidden');
-
-            const fd = new FormData();
-            fd.append('acres', document.getElementById('calc-acres').value);
-            fd.append('irrigation_type', document.getElementById('calc-irrigation').value);
-
-            try {
-                const res = await fetch('/api/sustainability-calc', { method: 'POST', body: fd });
-                const d = await res.json();
-                if (!res.ok || d.status === 'error') {
-                    errBox.innerText = d.message || 'Could not calculate.';
-                    errBox.classList.remove('hidden');
-                    return;
-                }
-                const n = v => v.toLocaleString('en-IN');
-                document.getElementById('calc-water').innerText = n(d.water_saved_litres) + ' Litres';
-                document.getElementById('calc-fungicide').innerText = d.fungicide_reduction_kg + ' kg';
-                document.getElementById('calc-co2').innerText = n(d.co2_saved_kg) + ' kg';
-                document.getElementById('calc-inr').innerText = '₹' + n(d.cost_saved_inr);
-                document.getElementById('calc-score').innerText = d.sustainability_score + ' / 100';
-                document.getElementById('top-eco-score').innerText =
-                    d.sustainability_score + ' / 100 (' + d.rating + ')';
-            } catch (err) {
-                errBox.innerText = 'Could not reach the server.';
-                errBox.classList.remove('hidden');
-            }
-        }
-
-        updateSustainability();
-        fetchSoilAnalytics();
-        setInterval(fetchSoilAnalytics, 3500);
     </script>
 </body>
 </html>

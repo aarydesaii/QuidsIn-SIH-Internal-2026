@@ -10,11 +10,11 @@
 | Module | Status | Description |
 | :--- | :---: | :--- |
 | **3.1 Core Task (Mandatory)** |  Built | Leaf Disease Detection using Transfer-Learned YOLOv8 with full precautionary guidance |
-| **3.2 Bonus Module B** |  Built | Smart Irrigation Advisory combining soil moisture, rain forecast, and crop stage |
+| **3.2 Bonus Module B** |  Built | Smart Irrigation Advisory deriving schedule and volume from soil texture, crop season length and application efficiency |
 | **3.2 Bonus Module C** |  Built | Weather-Based Intelligence & safe spray-window recommendations |
-| **3.2 Bonus Module D** |  Built | Quantified Farm Sustainability Score & resource savings formula (Water, Fungicide, CO2) |
+| **3.2 Bonus Module D** |  Built | Quantified Farm Sustainability Score scored across irrigation efficiency, organic carbon, pH and fertiliser precision, with water / fertiliser / CO2 / rupee savings |
 | **3.2 Bonus Module E** |  Built | Kisan Sahayak GenAI Assistant with Voice/TTS & multilingual capability |
-| **3.2 Bonus Module F** |  Built | Soil Analytics — simulated agronomic model (Soil Moisture, Temp, Humidity, pH, NPK). Software only, no hardware |
+| **3.2 Bonus Module F** |  Built | Soil Health Card advisory — converts the farmer's own N/P/K/pH card reading into bag-level fertiliser doses, a pH amendment and an irrigation schedule. Software only, no hardware |
 | **4.1 Predict CLI Interface** |  Built | Standalone reproducible CLI (`python model/predict.py --image <path>`) |
 
 ---
@@ -103,7 +103,7 @@ report/           Model report
                              [Interactive Responsive Web Dashboard & Voice TTS]
                                                     ▲
                                                     │
-      [Simulated Soil Analytics] ──── [Micro-Climate Weather] ──── [Kisan Sahayak AI Chat]
+     [Soil Health Card Advisory] ──── [Micro-Climate Weather] ──── [Kisan Sahayak AI Chat]
 ```
 
 ---
