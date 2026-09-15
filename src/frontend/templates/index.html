@@ -535,11 +535,14 @@
         }
 
         function initializeWeatherMap() {
-            weatherMap = L.map('weather-map', { zoomControl: true }).setView([23.0225, 72.5714], 11);
+            weatherMap = L.map('weather-map', { zoomControl: true, attributionControl: false }).setView([23.0225, 72.5714], 11);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
+                attribution: ''
             }).addTo(weatherMap);
+            L.control.attribution({ prefix: false })
+                .addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>')
+                .addTo(weatherMap);
             weatherMarker = L.marker([23.0225, 72.5714]).addTo(weatherMap);
             weatherMap.on('click', event => {
                 setWeatherLocation(event.latlng.lat, event.latlng.lng, 'Location selected on map — confirm to update weather.');
