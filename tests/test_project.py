@@ -15,6 +15,7 @@ model/weights/best.pt is absent, so the suite still passes on a clean checkout.
 import io
 import re
 import sys
+import json
 import unittest
 import subprocess
 from pathlib import Path
@@ -55,6 +56,21 @@ def a_real_leaf_image():
                 if image.suffix.lower() in {".jpg", ".jpeg", ".png"}:
                     return image
     return None
+
+
+def sample_cards_from_the_page():
+    """Read the sample Soil Health Cards out of soil.html.
+
+    Parsing the page rather than restating the values here means the tests fail
+    if a chip is ever edited into something the calculator rejects.
+    """
+    html = (TEMPLATES / "soil.html").read_text(encoding="utf-8")
+    block = re.search(r"const SAMPLE_CARDS = (\[.*?\]);", html, re.S).group(1)
+    # Lambdas rather than backreferences keep this readable through the escaping.
+    block = re.sub(r"(\w+):", lambda m: '"%s":' % m.group(1), block)   # JS keys -> JSON
+    block = block.replace("'", '"')                                  # JS quotes -> JSON
+    block = re.sub(r",(\s*[}\]])", lambda m: m.group(1), block)        # trailing commas
+    return json.loads(block)
 
 
 def png_bytes(color=(120, 160, 90), size=(320, 320)):
@@ -555,6 +571,89 @@ class TestOodGuardConfiguration(unittest.TestCase):
                      "MIN_USABLE_CONFIDENCE", "MAX_USABLE_ENTROPY"):
             with self.subTest(threshold=name):
                 self.assertTrue(0.0 <= getattr(ood_guard, name) <= 1.0)
+
+
+class TestSampleCards(unittest.TestCase):
+    """The one-click sample cards must all produce a usable plan."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cards = sample_cards_from_the_page()
+
+    def test_the_page_offers_sample_cards(self):
+        self.assertGreaterEqual(len(self.cards), 5)
+
+    def test_every_sample_card_produces_a_plan(self):
+        for card in self.cards:
+            with self.subTest(card=card["name"]):
+                response = client.post("/api/soil-health-card", data={
+                    "nitrogen": card["n"], "phosphorus": card["p"], "potassium": card["k"],
+                    "ph": card["ph"], "organic_carbon": card["oc"], "crop": card["crop"],
+                    "acres": card["acres"], "soil_type": card["soil"],
+                    "irrigation_method": card["irrigation"]})
+                self.assertEqual(response.status_code, 200)
+                body = response.json()
+                self.assertEqual(body["status"], "success")
+                self.assertTrue(body["fertilisers"])
+                self.assertTrue(body["soil_health"]["ph_class"])
+
+    def test_the_samples_cover_the_advisory_branches(self):
+        """The set is only useful for testing if it reaches every branch."""
+        results = []
+        for card in self.cards:
+            results.append(sa.build_advisory(
+                nitrogen=card["n"], phosphorus=card["p"], potassium=card["k"],
+                ph=card["ph"], organic_carbon=card["oc"], crop=card["crop"],
+                acres=card["acres"], soil_type=card["soil"],
+                irrigation_method=card["irrigation"]))
+
+        ratings = {n["rating"] for r in results for n in r["nutrients"]}
+        self.assertEqual(ratings, {"Low", "Medium", "High"})
+
+        amendments = {r["soil_health"]["amendment_name"] for r in results}
+        self.assertIn("Agricultural Lime", amendments)
+        self.assertIn("Gypsum", amendments)
+        self.assertIn(None, amendments)
+
+        self.assertEqual({c["soil"] for c in self.cards}, set(sa.SOIL_TYPES))
+        self.assertEqual({c["irrigation"] for c in self.cards}, set(sa.IRRIGATION_METHODS))
+
+        # At least one card must take the legume path, since that is the branch
+        # where the phosphorus carrier changes.
+        carriers = {row["name"].split(" (")[0] for r in results for row in r["fertilisers"]}
+        self.assertIn("SSP", carriers)
+
+    def test_a_correction_never_claims_a_deficiency_that_is_not_there(self):
+        """A dose above the blanket rate has two causes, and they read differently.
+
+        The Nashik sample has no Low nutrient at all, yet its urea rises: cutting
+        the phosphorus dose removes the nitrogen DAP was carrying. Labelling that
+        a deficiency would print "Low in" followed by an empty list.
+        """
+        for card in self.cards:
+            result = sa.build_advisory(
+                nitrogen=card["n"], phosphorus=card["p"], potassium=card["k"],
+                ph=card["ph"], organic_carbon=card["oc"], crop=card["crop"],
+                acres=card["acres"], soil_type=card["soil"],
+                irrigation_method=card["irrigation"])["sustainability"]
+            with self.subTest(card=card["name"]):
+                if result["correction_reason"] == "deficiency":
+                    self.assertTrue(result["deficient_nutrients"])
+                else:
+                    self.assertEqual(result["deficient_nutrients"], [])
+
+    def test_reason_is_consistent_across_the_whole_input_space(self):
+        for crop in sa.CROP_RDF:
+            for n in (100, 245, 400, 900):
+                for p in (5, 18, 31, 120):
+                    for k in (95, 190, 400):
+                        result = sa.build_advisory(
+                            nitrogen=n, phosphorus=p, potassium=k, ph=7.0,
+                            organic_carbon=0.6, crop=crop, acres=2.5,
+                            soil_type="loam", irrigation_method="drip")["sustainability"]
+                        with self.subTest(crop=crop, npk=(n, p, k)):
+                            deficient = bool(result["deficient_nutrients"])
+                            self.assertEqual(result["correction_reason"] == "deficiency", deficient)
 
 
 if __name__ == "__main__":

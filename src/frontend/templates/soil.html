@@ -690,11 +690,16 @@
             const note = document.getElementById('correction-note');
             if (su.fertiliser_added_kg > 0) {
                 note.classList.remove('hidden');
+                const extra = `<span class="font-bold">${su.fertiliser_added_kg} kg</span> of product above the blanket dose `
+                    + `(about <span class="font-bold">₹${n(su.correction_cost_inr)}</span> extra)`;
                 document.getElementById('correction-text').innerHTML =
-                    `Your soil tested <span class="font-bold">Low in ${su.deficient_nutrients.join(' and ')}</span>, `
-                    + `so this plan adds <span class="font-bold">${su.fertiliser_added_kg} kg</span> of product above the blanket dose `
-                    + `(about <span class="font-bold">₹${n(su.correction_cost_inr)}</span> extra). `
-                    + `That is a corrective investment in a deficient soil, so it is not counted as a saving above.`;
+                    su.correction_reason === 'deficiency'
+                        ? `Your soil tested <span class="font-bold">Low in ${su.deficient_nutrients.join(' and ')}</span>, `
+                          + `so this plan adds ${extra}. That is a corrective investment in a deficient soil, `
+                          + `so it is not counted as a saving above.`
+                        : `No nutrient tested Low here. Cutting the phosphorus dose also removes the nitrogen that DAP `
+                          + `was carrying, so the plan adds ${extra} of urea to hold nitrogen on target. `
+                          + `The total nutrient applied still falls.`;
             } else {
                 note.classList.add('hidden');
             }

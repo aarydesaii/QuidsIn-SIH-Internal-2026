@@ -283,6 +283,11 @@ def build_advisory(nitrogen, phosphorus, potassium, ph, organic_carbon,
 
     # Named for the note the page shows when a correction pushes a dose above
     # the blanket rate, so the extra spend is explained rather than hidden.
+    # A dose can exceed the blanket rate for two different reasons, and the page
+    # must not conflate them: either a nutrient tested Low, or cutting the
+    # phosphorus dose removed the nitrogen DAP was carrying and urea has to rise
+    # to hold nitrogen on target. The second happens on soils with no deficiency
+    # at all, so the note cannot assume there is a Low nutrient to name.
     deficient = [key.capitalize() for key in ("nitrogen", "phosphorus", "potassium")
                  if ratings[key] == "Low"]
 
@@ -348,6 +353,7 @@ def build_advisory(nitrogen, phosphorus, potassium, ph, organic_carbon,
             "fertiliser_added_kg": round(fertiliser_added_kg, 1),
             "correction_cost_inr": int(round(fertiliser_cost_added)),
             "deficient_nutrients": deficient,
+            "correction_reason": ("deficiency" if deficient else "rebalance"),
             "co2_saved_kg": round(co2_saved, 1),
             "cost_saved_inr": int(round(cost_saved)),
         },
